@@ -664,6 +664,13 @@
                                 <p class="text-2xl font-bold text-green-600">${m.cost} ₪</p>
                             </div>
                             <div class="flex gap-1">
+                                <button onclick="printMaintenance(${m.id})" class="p-1.5 text-purple-600 hover:bg-purple-50 rounded-lg transition" title="הדפס טיפול">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                                        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                                        <rect x="6" y="14" width="12" height="8"></rect>
+                                    </svg>
+                                </button>
                                 <button onclick="editMaintenance(${m.id})" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition" title="ערוך טיפול">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                         <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
@@ -744,6 +751,200 @@
             saveData();
             renderMaintenanceList(cars[carIndex]);
             renderCars();
+        }
+
+        // Print maintenance
+        function printMaintenance(maintenanceId) {
+            const car = cars.find(c => c.id === selectedCarId);
+            const maintenance = car.maintenanceHistory.find(m => m.id === maintenanceId);
+            if (!maintenance) return;
+            
+            const printWindow = window.open('', '_blank');
+            const imagesHtml = maintenance.images && maintenance.images.length > 0 ? `
+                <div style="margin-top: 30px;">
+                    <h3 style="font-size: 18px; font-weight: bold; margin-bottom: 15px; color: #1f2937;">תמונות התקלה</h3>
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+                        ${maintenance.images.map(img => `
+                            <img src="${img}" style="width: 100%; height: 200px; object-fit: cover; border-radius: 8px; border: 2px solid #e5e7eb;">
+                        `).join('')}
+                    </div>
+                </div>
+            ` : '';
+            
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html dir="rtl" lang="he">
+                <head>
+                    <meta charset="UTF-8">
+                    <title>דוח טיפול - ${car.plateNumber}</title>
+                    <style>
+                        * {
+                            margin: 0;
+                            padding: 0;
+                            box-sizing: border-box;
+                            font-family: Arial, sans-serif;
+                        }
+                        body {
+                            padding: 40px;
+                            background: white;
+                        }
+                        .header {
+                            text-align: center;
+                            border-bottom: 3px solid #2563eb;
+                            padding-bottom: 20px;
+                            margin-bottom: 30px;
+                        }
+                        .header h1 {
+                            color: #2563eb;
+                            font-size: 32px;
+                            margin-bottom: 10px;
+                        }
+                        .header p {
+                            color: #6b7280;
+                            font-size: 16px;
+                        }
+                        .section {
+                            margin-bottom: 25px;
+                            background: #f9fafb;
+                            padding: 20px;
+                            border-radius: 8px;
+                            border-right: 4px solid #2563eb;
+                        }
+                        .section-title {
+                            font-size: 20px;
+                            font-weight: bold;
+                            color: #1f2937;
+                            margin-bottom: 15px;
+                        }
+                        .info-grid {
+                            display: grid;
+                            grid-template-columns: repeat(2, 1fr);
+                            gap: 15px;
+                        }
+                        .info-item {
+                            display: flex;
+                            flex-direction: column;
+                        }
+                        .info-label {
+                            font-size: 14px;
+                            color: #6b7280;
+                            margin-bottom: 5px;
+                        }
+                        .info-value {
+                            font-size: 18px;
+                            font-weight: bold;
+                            color: #1f2937;
+                        }
+                        .description {
+                            background: white;
+                            padding: 15px;
+                            border-radius: 8px;
+                            color: #374151;
+                            line-height: 1.6;
+                        }
+                        .cost-box {
+                            background: #10b981;
+                            color: white;
+                            padding: 20px;
+                            border-radius: 8px;
+                            text-align: center;
+                            margin-top: 30px;
+                        }
+                        .cost-box .label {
+                            font-size: 16px;
+                            margin-bottom: 10px;
+                        }
+                        .cost-box .value {
+                            font-size: 36px;
+                            font-weight: bold;
+                        }
+                        .footer {
+                            margin-top: 50px;
+                            text-align: center;
+                            color: #9ca3af;
+                            font-size: 14px;
+                            border-top: 2px solid #e5e7eb;
+                            padding-top: 20px;
+                        }
+                        @media print {
+                            body {
+                                padding: 20px;
+                            }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h1>🔧 דוח טיפול</h1>
+                        <p>מערכת ניהול מוסך</p>
+                    </div>
+
+                    <div class="section">
+                        <div class="section-title">פרטי רכב</div>
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <span class="info-label">מספר רישוי</span>
+                                <span class="info-value">${car.plateNumber}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">שם הבעלים</span>
+                                <span class="info-value">${car.ownerName}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">טלפון</span>
+                                <span class="info-value">${car.phone || '-'}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">סוג רכב</span>
+                                <span class="info-value">${car.carType || '-'}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section">
+                        <div class="section-title">פרטי טיפול</div>
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <span class="info-label">תאריך</span>
+                                <span class="info-value">${new Date(maintenance.date).toLocaleDateString('he-IL')}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">קילומטראז'</span>
+                                <span class="info-value">${maintenance.kilometers ? Number(maintenance.kilometers).toLocaleString() + ' ק"מ' : '-'}</span>
+                            </div>
+                            <div class="info-item" style="grid-column: span 2;">
+                                <span class="info-label">חלק שהוחלף</span>
+                                <span class="info-value">${maintenance.partName}</span>
+                            </div>
+                        </div>
+                        ${maintenance.description ? `
+                            <div style="margin-top: 20px;">
+                                <span class="info-label">תיאור העבודה</span>
+                                <div class="description">${maintenance.description}</div>
+                            </div>
+                        ` : ''}
+                    </div>
+
+                    ${imagesHtml}
+
+                    <div class="cost-box">
+                        <div class="label">סך הכל לתשלום</div>
+                        <div class="value">${maintenance.cost} ₪</div>
+                    </div>
+
+                    <div class="footer">
+                        <p>תאריך הדפסה: ${new Date().toLocaleDateString('he-IL')} | מערכת ניהול מוסך</p>
+                    </div>
+                </body>
+                </html>
+            `);
+            
+            printWindow.document.close();
+            printWindow.focus();
+            
+            setTimeout(() => {
+                printWindow.print();
+            }, 250);
         }
 
         // Save maintenance
