@@ -1,516 +1,542 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Plus, Edit2, Trash2, FileText, Download, Car, Wrench } from 'lucide-react';
-
-const GarageManagement = () => {
-  const [cars, setCars] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [showMaintenanceForm, setShowMaintenanceForm] = useState(false);
-  const [selectedCar, setSelectedCar] = useState(null);
-  const [editingCar, setEditingCar] = useState(null);
-  
-  const [carForm, setCarForm] = useState({
-    plateNumber: '',
-    ownerName: '',
-    phone: '',
-    carType: '',
-    model: '',
-    year: ''
-  });
-
-  const [maintenanceForm, setMaintenanceForm] = useState({
-    date: new Date().toISOString().split('T')[0],
-    partName: '',
-    description: '',
-    cost: ''
-  });
-
-  useEffect(() => {
-    const savedCars = localStorage.getItem('garageCars');
-    if (savedCars) {
-      setCars(JSON.parse(savedCars));
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('garageCars', JSON.stringify(cars));
-  }, [cars]);
-
-  const handleAddCar = () => {
-    if (!carForm.plateNumber || !carForm.ownerName) {
-      alert('נא להזין מספר רישוי ושם הבעלים');
-      return;
-    }
-
-    if (editingCar) {
-      setCars(cars.map(car => 
-        car.id === editingCar.id ? { ...car, ...carForm } : car
-      ));
-      setEditingCar(null);
-    } else {
-      const newCar = {
-        id: Date.now(),
-        ...carForm,
-        maintenanceHistory: []
-      };
-      setCars([...cars, newCar]);
-    }
-
-    setCarForm({
-      plateNumber: '',
-      ownerName: '',
-      phone: '',
-      carType: '',
-      model: '',
-      year: ''
-    });
-    setShowAddForm(false);
-  };
-
-  const handleEditCar = (car) => {
-    setCarForm({
-      plateNumber: car.plateNumber,
-      ownerName: car.ownerName,
-      phone: car.phone,
-      carType: car.carType,
-      model: car.model,
-      year: car.year
-    });
-    setEditingCar(car);
-    setShowAddForm(true);
-  };
-
-  const handleDeleteCar = (carId) => {
-    if (window.confirm('האם אתה בטוח שברצונך למחוק רכב זה?')) {
-      setCars(cars.filter(car => car.id !== carId));
-    }
-  };
-
-  const handleAddMaintenance = () => {
-    if (!maintenanceForm.partName || !maintenanceForm.cost) {
-      alert('נא להזין שם החלק והעלות');
-      return;
-    }
-
-    const newMaintenance = {
-      id: Date.now(),
-      ...maintenanceForm
-    };
-
-    setCars(cars.map(car => 
-      car.id === selectedCar.id 
-        ? { ...car, maintenanceHistory: [...car.maintenanceHistory, newMaintenance] }
-        : car
-    ));
-
-    setMaintenanceForm({
-      date: new Date().toISOString().split('T')[0],
-      partName: '',
-      description: '',
-      cost: ''
-    });
-    setShowMaintenanceForm(false);
-    setSelectedCar(cars.find(car => car.id === selectedCar.id));
-  };
-
-  const exportToExcel = () => {
-    let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
-    csvContent += "מספר רישוי,שם הבעלים,מספר טלפון,סוג רכב,דגם,שנת ייצור\n";
-    
-    cars.forEach(car => {
-      csvContent += `${car.plateNumber},${car.ownerName},${car.phone},${car.carType},${car.model},${car.year}\n`;
-    });
-
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "garage_data.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const filteredCars = cars.filter(car => 
-    car.plateNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    car.ownerName.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100" dir="rtl">
-      <div className="container mx-auto px-4 py-8">
-        <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-3">
-              <div className="bg-blue-600 p-3 rounded-xl">
-                <Car className="text-white" size={32} />
-              </div>
-              <h1 className="text-4xl font-bold text-gray-800">מערכת ניהול מוסך</h1>
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowAddForm(true)}
-                className="flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition"
-              >
-                <Plus size={20} />
-                הוסף רכב
-              </button>
-              <button
-                onClick={exportToExcel}
-                className="flex items-center gap-2 bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition"
-              >
-                <Download size={20} />
-                ייצא לאקסל
-              </button>
-            </div>
-          </div>
-
-          <div className="relative mb-6">
-            <Search className="absolute right-4 top-3.5 text-gray-400" size={20} />
-            <input
-              type="text"
-              placeholder="חיפוש לפי מספר רישוי או שם בעלים..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pr-12 pl-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
-            />
-          </div>
-
-          <div className="text-gray-600 mb-4">
-            סך הכל רכבים: <span className="font-bold text-blue-600">{cars.length}</span>
-          </div>
-        </div>
-
-        {showAddForm && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <h2 className="text-2xl font-bold mb-6 text-gray-800">
-                {editingCar ? 'עריכת רכב' : 'הוספת רכב חדש'}
-              </h2>
-              
-              <div className="grid grid-cols-2 gap-4 mb-6">
-                <div>
-                  <label className="block text-gray-700 font-semibold mb-2">מספר רישוי *</label>
-                  <input
-                    type="text"
-                    value={carForm.plateNumber}
-                    onChange={(e) => setCarForm({...carForm, plateNumber: e.target.value})}
-                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-gray-700 font-semibold mb-2">שם הבעלים *</label>
-                  <input
-                    type="text"
-                    value={carForm.ownerName}
-                    onChange={(e) => setCarForm({...carForm, ownerName: e.target.value})}
-                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-gray-700 font-semibold mb-2">מספר טלפון</label>
-                  <input
-                    type="text"
-                    value={carForm.phone}
-                    onChange={(e) => setCarForm({...carForm, phone: e.target.value})}
-                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-gray-700 font-semibold mb-2">סוג רכב</label>
-                  <input
-                    type="text"
-                    value={carForm.carType}
-                    onChange={(e) => setCarForm({...carForm, carType: e.target.value})}
-                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-gray-700 font-semibold mb-2">דגם</label>
-                  <input
-                    type="text"
-                    value={carForm.model}
-                    onChange={(e) => setCarForm({...carForm, model: e.target.value})}
-                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-gray-700 font-semibold mb-2">שנת ייצור</label>
-                  <input
-                    type="text"
-                    value={carForm.year}
-                    onChange={(e) => setCarForm({...carForm, year: e.target.value})}
-                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-3 justify-end">
-                <button
-                  onClick={() => {
-                    setShowAddForm(false);
-                    setEditingCar(null);
-                    setCarForm({
-                      plateNumber: '',
-                      ownerName: '',
-                      phone: '',
-                      carType: '',
-                      model: '',
-                      year: ''
-                    });
-                  }}
-                  className="px-6 py-2 border-2 border-gray-300 rounded-lg hover:bg-gray-100 transition"
-                >
-                  ביטול
-                </button>
-                <button
-                  onClick={handleAddCar}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-                >
-                  {editingCar ? 'עדכן' : 'הוסף'}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {showMaintenanceForm && selectedCar && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl p-8 max-w-2xl w-full">
-              <h2 className="text-2xl font-bold mb-6 text-gray-800">הוספת טיפול</h2>
-              <p className="text-gray-600 mb-6">רכב: {selectedCar.plateNumber} - {selectedCar.ownerName}</p>
-              
-              <div className="space-y-4 mb-6">
-                <div>
-                  <label className="block text-gray-700 font-semibold mb-2">תאריך *</label>
-                  <input
-                    type="date"
-                    value={maintenanceForm.date}
-                    onChange={(e) => setMaintenanceForm({...maintenanceForm, date: e.target.value})}
-                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-gray-700 font-semibold mb-2">שם החלק *</label>
-                  <input
-                    type="text"
-                    value={maintenanceForm.partName}
-                    onChange={(e) => setMaintenanceForm({...maintenanceForm, partName: e.target.value})}
-                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-gray-700 font-semibold mb-2">תיאור העבודה</label>
-                  <textarea
-                    value={maintenanceForm.description}
-                    onChange={(e) => setMaintenanceForm({...maintenanceForm, description: e.target.value})}
-                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
-                    rows="3"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-gray-700 font-semibold mb-2">עלות (₪) *</label>
-                  <input
-                    type="number"
-                    value={maintenanceForm.cost}
-                    onChange={(e) => setMaintenanceForm({...maintenanceForm, cost: e.target.value})}
-                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-3 justify-end">
-                <button
-                  onClick={() => {
-                    setShowMaintenanceForm(false);
-                    setMaintenanceForm({
-                      date: new Date().toISOString().split('T')[0],
-                      partName: '',
-                      description: '',
-                      cost: ''
-                    });
-                  }}
-                  className="px-6 py-2 border-2 border-gray-300 rounded-lg hover:bg-gray-100 transition"
-                >
-                  ביטול
-                </button>
-                <button
-                  onClick={handleAddMaintenance}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-                >
-                  הוסף טיפול
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {selectedCar && !showMaintenanceForm && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="flex justify-between items-start mb-6">
-                <div>
-                  <h2 className="text-3xl font-bold text-gray-800 mb-2">{selectedCar.plateNumber}</h2>
-                  <p className="text-xl text-gray-600">{selectedCar.ownerName}</p>
-                </div>
-                <button
-                  onClick={() => setSelectedCar(null)}
-                  className="text-gray-500 hover:text-gray-700 text-2xl"
-                >
-                  ×
-                </button>
-              </div>
-
-              <div className="grid grid-cols-3 gap-4 mb-8 bg-gray-50 p-6 rounded-xl">
-                <div>
-                  <p className="text-gray-600 text-sm">טלפון</p>
-                  <p className="font-semibold">{selectedCar.phone || '-'}</p>
-                </div>
-                <div>
-                  <p className="text-gray-600 text-sm">סוג רכב</p>
-                  <p className="font-semibold">{selectedCar.carType || '-'}</p>
-                </div>
-                <div>
-                  <p className="text-gray-600 text-sm">דגם</p>
-                  <p className="font-semibold">{selectedCar.model || '-'}</p>
-                </div>
-                <div>
-                  <p className="text-gray-600 text-sm">שנה</p>
-                  <p className="font-semibold">{selectedCar.year || '-'}</p>
-                </div>
-              </div>
-
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-2xl font-bold text-gray-800">היסטוריית טיפולים</h3>
-                <button
-                  onClick={() => setShowMaintenanceForm(true)}
-                  className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition"
-                >
-                  <Plus size={18} />
-                  הוסף טיפול
-                </button>
-              </div>
-
-              {selectedCar.maintenanceHistory && selectedCar.maintenanceHistory.length > 0 ? (
-                <div className="space-y-4">
-                  {selectedCar.maintenanceHistory.sort((a, b) => new Date(b.date) - new Date(a.date)).map((maintenance) => (
-                    <div key={maintenance.id} className="border-2 border-gray-200 rounded-xl p-6 hover:border-blue-300 transition">
-                      <div className="flex justify-between items-start mb-3">
-                        <div className="flex items-center gap-3">
-                          <Wrench className="text-blue-600" size={24} />
-                          <div>
-                            <h4 className="text-xl font-bold text-gray-800">{maintenance.partName}</h4>
-                            <p className="text-gray-600 text-sm">{new Date(maintenance.date).toLocaleDateString('he-IL')}</p>
-                          </div>
-                        </div>
-                        <div className="text-left">
-                          <p className="text-2xl font-bold text-green-600">{maintenance.cost} ₪</p>
-                        </div>
-                      </div>
-                      {maintenance.description && (
-                        <p className="text-gray-700 bg-gray-50 p-3 rounded-lg">{maintenance.description}</p>
-                      )}
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מערכת ניהול מוסך</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen">
+    <div id="app" class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="bg-white rounded-2xl shadow-xl p-8 mb-8">
+            <div class="flex items-center justify-between mb-8">
+                <div class="flex items-center gap-3">
+                    <div class="bg-blue-600 p-3 rounded-xl">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/>
+                            <circle cx="7" cy="17" r="2"/>
+                            <path d="M9 17h6"/>
+                            <circle cx="17" cy="17" r="2"/>
+                        </svg>
                     </div>
-                  ))}
+                    <h1 class="text-4xl font-bold text-gray-800">מערכת ניהול מוסך</h1>
                 </div>
-              ) : (
-                <div className="text-center py-12 bg-gray-50 rounded-xl">
-                  <Wrench className="mx-auto text-gray-400 mb-4" size={48} />
-                  <p className="text-gray-600">אין טיפולים רשומים עדיין</p>
+                <div class="flex gap-3">
+                    <button onclick="showAddCarForm()" class="flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        הוסף רכב
+                    </button>
+                    <button onclick="exportToExcel()" class="flex items-center gap-2 bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        ייצא לאקסל
+                    </button>
                 </div>
-              )}
             </div>
-          </div>
-        )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredCars.map((car) => (
-            <div key={car.id} className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition">
-              <div className="flex justify-between items-start mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="bg-blue-100 p-2 rounded-lg">
-                    <Car className="text-blue-600" size={24} />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-800">{car.plateNumber}</h3>
-                    <p className="text-gray-600">{car.ownerName}</p>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleEditCar(car)}
-                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
-                  >
-                    <Edit2 size={18} />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteCar(car.id)}
-                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
-                  >
-                    <Trash2 size={18} />
-                  </button>
-                </div>
-              </div>
-
-              <div className="space-y-2 mb-4">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">טלפון:</span>
-                  <span className="font-semibold">{car.phone || '-'}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">סוג:</span>
-                  <span className="font-semibold">{car.carType || '-'}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">דגם:</span>
-                  <span className="font-semibold">{car.model || '-'}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">שנה:</span>
-                  <span className="font-semibold">{car.year || '-'}</span>
-                </div>
-              </div>
-
-              <div className="border-t pt-4">
-                <div className="flex justify-between items-center mb-3">
-                  <span className="text-sm text-gray-600">טיפולים:</span>
-                  <span className="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-sm font-bold">
-                    {car.maintenanceHistory?.length || 0}
-                  </span>
-                </div>
-                <button
-                  onClick={() => setSelectedCar(car)}
-                  className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white py-2 rounded-lg hover:from-blue-700 hover:to-blue-800 transition"
-                >
-                  <FileText size={18} />
-                  הצג פרטים
-                </button>
-              </div>
+            <div class="relative mb-6">
+                <svg class="absolute right-4 top-3.5 text-gray-400" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <path d="m21 21-4.35-4.35"></path>
+                </svg>
+                <input type="text" id="searchInput" onkeyup="filterCars()" placeholder="חיפוש לפי מספר רישוי או שם בעלים..." class="w-full pr-12 pl-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
             </div>
-          ))}
+
+            <div class="text-gray-600 mb-4">
+                סך הכל רכבים: <span id="carCount" class="font-bold text-blue-600">0</span>
+            </div>
         </div>
 
-        {filteredCars.length === 0 && (
-          <div className="bg-white rounded-2xl shadow-xl p-12 text-center">
-            <Car className="mx-auto text-gray-400 mb-4" size={64} />
-            <h3 className="text-2xl font-bold text-gray-600 mb-2">
-              {searchTerm ? 'לא נמצאו רכבים' : 'אין רכבים במערכת'}
-            </h3>
-            <p className="text-gray-500">
-              {searchTerm ? 'נסה לחפש במילות חיפוש אחרות' : 'התחל על ידי הוספת רכב חדש'}
-            </p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
+        <!-- Cars Grid -->
+        <div id="carsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
 
-export default GarageManagement;
+        <!-- Empty State -->
+        <div id="emptyState" class="bg-white rounded-2xl shadow-xl p-12 text-center hidden">
+            <svg class="mx-auto text-gray-400 mb-4" xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/>
+                <circle cx="7" cy="17" r="2"/>
+                <path d="M9 17h6"/>
+                <circle cx="17" cy="17" r="2"/>
+            </svg>
+            <h3 class="text-2xl font-bold text-gray-600 mb-2">אין רכבים במערכת</h3>
+            <p class="text-gray-500">התחל על ידי הוספת רכב חדש</p>
+        </div>
+    </div>
+
+    <!-- Add/Edit Car Modal -->
+    <div id="carModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <h2 id="carModalTitle" class="text-2xl font-bold mb-6 text-gray-800">הוספת רכב חדש</h2>
+            
+            <div class="grid grid-cols-2 gap-4 mb-6">
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-2">מספר רישוי *</label>
+                    <input type="text" id="plateNumber" class="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
+                </div>
+                
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-2">שם הבעלים *</label>
+                    <input type="text" id="ownerName" class="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
+                </div>
+                
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-2">מספר טלפון</label>
+                    <input type="text" id="phone" class="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
+                </div>
+                
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-2">סוג רכב</label>
+                    <input type="text" id="carType" class="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
+                </div>
+                
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-2">דגם</label>
+                    <input type="text" id="model" class="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
+                </div>
+                
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-2">שנת ייצור</label>
+                    <input type="text" id="year" class="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
+                </div>
+            </div>
+
+            <div class="flex gap-3 justify-end">
+                <button onclick="closeCarModal()" class="px-6 py-2 border-2 border-gray-300 rounded-lg hover:bg-gray-100 transition">
+                    ביטול
+                </button>
+                <button onclick="saveCar()" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                    שמור
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Car Details Modal -->
+    <div id="detailsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-start mb-6">
+                <div>
+                    <h2 id="detailsPlate" class="text-3xl font-bold text-gray-800 mb-2"></h2>
+                    <p id="detailsOwner" class="text-xl text-gray-600"></p>
+                </div>
+                <button onclick="closeDetailsModal()" class="text-gray-500 hover:text-gray-700 text-2xl">
+                    ×
+                </button>
+            </div>
+
+            <div id="detailsInfo" class="grid grid-cols-3 gap-4 mb-8 bg-gray-50 p-6 rounded-xl"></div>
+
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-gray-800">היסטוריית טיפולים</h3>
+                <button onclick="showMaintenanceForm()" class="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    הוסף טיפול
+                </button>
+            </div>
+
+            <div id="maintenanceList"></div>
+        </div>
+    </div>
+
+    <!-- Maintenance Modal -->
+    <div id="maintenanceModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl p-8 max-w-2xl w-full">
+            <h2 class="text-2xl font-bold mb-6 text-gray-800">הוספת טיפול</h2>
+            
+            <div class="space-y-4 mb-6">
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-2">תאריך *</label>
+                    <input type="date" id="maintenanceDate" class="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
+                </div>
+                
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-2">שם החלק *</label>
+                    <input type="text" id="partName" class="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
+                </div>
+                
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-2">תיאור העבודה</label>
+                    <textarea id="description" rows="3" class="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"></textarea>
+                </div>
+                
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-2">עלות (₪) *</label>
+                    <input type="number" id="cost" class="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
+                </div>
+            </div>
+
+            <div class="flex gap-3 justify-end">
+                <button onclick="closeMaintenanceModal()" class="px-6 py-2 border-2 border-gray-300 rounded-lg hover:bg-gray-100 transition">
+                    ביטול
+                </button>
+                <button onclick="saveMaintenance()" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                    הוסף טיפול
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let cars = [];
+        let editingCarId = null;
+        let selectedCarId = null;
+
+        // Load data from localStorage
+        function loadData() {
+            const savedCars = localStorage.getItem('garageCars');
+            if (savedCars) {
+                cars = JSON.parse(savedCars);
+            }
+            renderCars();
+        }
+
+        // Save data to localStorage
+        function saveData() {
+            localStorage.setItem('garageCars', JSON.stringify(cars));
+        }
+
+        // Render cars grid
+        function renderCars() {
+            const grid = document.getElementById('carsGrid');
+            const emptyState = document.getElementById('emptyState');
+            const carCount = document.getElementById('carCount');
+            
+            carCount.textContent = cars.length;
+            
+            if (cars.length === 0) {
+                grid.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            
+            emptyState.classList.add('hidden');
+            
+            grid.innerHTML = cars.map(car => `
+                <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition car-card" data-plate="${car.plateNumber}" data-owner="${car.ownerName}">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="bg-blue-100 p-2 rounded-lg">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600">
+                                    <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/>
+                                    <circle cx="7" cy="17" r="2"/>
+                                    <path d="M9 17h6"/>
+                                    <circle cx="17" cy="17" r="2"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-bold text-gray-800">${car.plateNumber}</h3>
+                                <p class="text-gray-600">${car.ownerName}</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="editCar(${car.id})" class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                                </svg>
+                            </button>
+                            <button onclick="deleteCar(${car.id})" class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2 mb-4">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">טלפון:</span>
+                            <span class="font-semibold">${car.phone || '-'}</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">סוג:</span>
+                            <span class="font-semibold">${car.carType || '-'}</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">דגם:</span>
+                            <span class="font-semibold">${car.model || '-'}</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">שנה:</span>
+                            <span class="font-semibold">${car.year || '-'}</span>
+                        </div>
+                    </div>
+
+                    <div class="border-t pt-4">
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="text-sm text-gray-600">טיפולים:</span>
+                            <span class="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-sm font-bold">
+                                ${car.maintenanceHistory?.length || 0}
+                            </span>
+                        </div>
+                        <button onclick="showCarDetails(${car.id})" class="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white py-2 rounded-lg hover:from-blue-700 hover:to-blue-800 transition">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                                <line x1="16" y1="13" x2="8" y2="13"></line>
+                                <line x1="16" y1="17" x2="8" y2="17"></line>
+                                <polyline points="10 9 9 9 8 9"></polyline>
+                            </svg>
+                            הצג פרטים
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Filter cars
+        function filterCars() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const cards = document.querySelectorAll('.car-card');
+            
+            cards.forEach(card => {
+                const plate = card.dataset.plate.toLowerCase();
+                const owner = card.dataset.owner.toLowerCase();
+                
+                if (plate.includes(searchTerm) || owner.includes(searchTerm)) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        // Show add car form
+        function showAddCarForm() {
+            editingCarId = null;
+            document.getElementById('carModalTitle').textContent = 'הוספת רכב חדש';
+            document.getElementById('plateNumber').value = '';
+            document.getElementById('ownerName').value = '';
+            document.getElementById('phone').value = '';
+            document.getElementById('carType').value = '';
+            document.getElementById('model').value = '';
+            document.getElementById('year').value = '';
+            document.getElementById('carModal').classList.remove('hidden');
+        }
+
+        // Edit car
+        function editCar(carId) {
+            const car = cars.find(c => c.id === carId);
+            if (!car) return;
+            
+            editingCarId = carId;
+            document.getElementById('carModalTitle').textContent = 'עריכת רכב';
+            document.getElementById('plateNumber').value = car.plateNumber;
+            document.getElementById('ownerName').value = car.ownerName;
+            document.getElementById('phone').value = car.phone || '';
+            document.getElementById('carType').value = car.carType || '';
+            document.getElementById('model').value = car.model || '';
+            document.getElementById('year').value = car.year || '';
+            document.getElementById('carModal').classList.remove('hidden');
+        }
+
+        // Save car
+        function saveCar() {
+            const plateNumber = document.getElementById('plateNumber').value.trim();
+            const ownerName = document.getElementById('ownerName').value.trim();
+            
+            if (!plateNumber || !ownerName) {
+                alert('נא להזין מספר רישוי ושם הבעלים');
+                return;
+            }
+            
+            const carData = {
+                plateNumber,
+                ownerName,
+                phone: document.getElementById('phone').value.trim(),
+                carType: document.getElementById('carType').value.trim(),
+                model: document.getElementById('model').value.trim(),
+                year: document.getElementById('year').value.trim()
+            };
+            
+            if (editingCarId) {
+                const index = cars.findIndex(c => c.id === editingCarId);
+                cars[index] = { ...cars[index], ...carData };
+            } else {
+                cars.push({
+                    id: Date.now(),
+                    ...carData,
+                    maintenanceHistory: []
+                });
+            }
+            
+            saveData();
+            renderCars();
+            closeCarModal();
+        }
+
+        // Close car modal
+        function closeCarModal() {
+            document.getElementById('carModal').classList.add('hidden');
+            editingCarId = null;
+        }
+
+        // Delete car
+        function deleteCar(carId) {
+            if (!confirm('האם אתה בטוח שברצונך למחוק רכב זה?')) return;
+            
+            cars = cars.filter(c => c.id !== carId);
+            saveData();
+            renderCars();
+        }
+
+        // Show car details
+        function showCarDetails(carId) {
+            const car = cars.find(c => c.id === carId);
+            if (!car) return;
+            
+            selectedCarId = carId;
+            document.getElementById('detailsPlate').textContent = car.plateNumber;
+            document.getElementById('detailsOwner').textContent = car.ownerName;
+            
+            document.getElementById('detailsInfo').innerHTML = `
+                <div>
+                    <p class="text-gray-600 text-sm">טלפון</p>
+                    <p class="font-semibold">${car.phone || '-'}</p>
+                </div>
+                <div>
+                    <p class="text-gray-600 text-sm">סוג רכב</p>
+                    <p class="font-semibold">${car.carType || '-'}</p>
+                </div>
+                <div>
+                    <p class="text-gray-600 text-sm">דגם</p>
+                    <p class="font-semibold">${car.model || '-'}</p>
+                </div>
+                <div>
+                    <p class="text-gray-600 text-sm">שנה</p>
+                    <p class="font-semibold">${car.year || '-'}</p>
+                </div>
+            `;
+            
+            renderMaintenanceList(car);
+            document.getElementById('detailsModal').classList.remove('hidden');
+        }
+
+        // Render maintenance list
+        function renderMaintenanceList(car) {
+            const list = document.getElementById('maintenanceList');
+            
+            if (!car.maintenanceHistory || car.maintenanceHistory.length === 0) {
+                list.innerHTML = `
+                    <div class="text-center py-12 bg-gray-50 rounded-xl">
+                        <svg class="mx-auto text-gray-400 mb-4" xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+                        </svg>
+                        <p class="text-gray-600">אין טיפולים רשומים עדיין</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const sorted = [...car.maintenanceHistory].sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            list.innerHTML = sorted.map(m => `
+                <div class="border-2 border-gray-200 rounded-xl p-6 hover:border-blue-300 transition mb-4">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="flex items-center gap-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600">
+                                <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+                            </svg>
+                            <div>
+                                <h4 class="text-xl font-bold text-gray-800">${m.partName}</h4>
+                                <p class="text-gray-600 text-sm">${new Date(m.date).toLocaleDateString('he-IL')}</p>
+                            </div>
+                        </div>
+                        <div class="text-left">
+                            <p class="text-2xl font-bold text-green-600">${m.cost} ₪</p>
+                        </div>
+                    </div>
+                    ${m.description ? `<p class="text-gray-700 bg-gray-50 p-3 rounded-lg">${m.description}</p>` : ''}
+                </div>
+            `).join('');
+        }
+
+        // Close details modal
+        function closeDetailsModal() {
+            document.getElementById('detailsModal').classList.add('hidden');
+            selectedCarId = null;
+        }
+
+        // Show maintenance form
+        function showMaintenanceForm() {
+            document.getElementById('maintenanceDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('partName').value = '';
+            document.getElementById('description').value = '';
+            document.getElementById('cost').value = '';
+            document.getElementById('maintenanceModal').classList.remove('hidden');
+        }
+
+        // Save maintenance
+        function saveMaintenance() {
+            const partName = document.getElementById('partName').value.trim();
+            const cost = document.getElementById('cost').value.trim();
+            
+            if (!partName || !cost) {
+                alert('נא להזין שם החלק והעלות');
+                return;
+            }
+            
+            const maintenance = {
+                id: Date.now(),
+                date: document.getElementById('maintenanceDate').value,
+                partName,
+                description: document.getElementById('description').value.trim(),
+                cost
+            };
+            
+            const carIndex = cars.findIndex(c => c.id === selectedCarId);
+            if (!cars[carIndex].maintenanceHistory) {
+                cars[carIndex].maintenanceHistory = [];
+            }
+            cars[carIndex].maintenanceHistory.push(maintenance);
+            
+            saveData();
+            renderMaintenanceList(cars[carIndex]);
+            closeMaintenanceModal();
+        }
+
+        // Close maintenance modal
+        function closeMaintenanceModal() {
+            document.getElementById('maintenanceModal').classList.add('hidden');
+        }
+
+        // Export to Excel
+        function exportToExcel() {
+            let csvContent = "\uFEFFמספר רישוי,שם הבעלים,מספר טלפון,סוג רכב,דגם,שנת ייצור\n";
+            
+            cars.forEach(car => {
+                csvContent += `${car.plateNumber},${car.ownerName},${car.phone || ''},${car.carType || ''},${car.model || ''},${car.year || ''}\n`;
+            });
+            
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'garage_data.csv');
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Initialize
+        loadData();
+    </script>
+</body>
+</html>
