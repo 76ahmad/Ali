@@ -205,7 +205,7 @@
     <!-- Maintenance Modal -->
     <div id="maintenanceModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <h2 class="text-2xl font-bold mb-6 text-gray-800">הוספת טיפול</h2>
+            <h2 id="maintenanceModalTitle" class="text-2xl font-bold mb-6 text-gray-800">הוספת טיפול</h2>
             
             <div class="space-y-4 mb-6">
                 <div>
@@ -252,7 +252,7 @@
                 <button onclick="closeMaintenanceModal()" class="px-6 py-2 border-2 border-gray-300 rounded-lg hover:bg-gray-100 transition">
                     ביטול
                 </button>
-                <button onclick="saveMaintenance()" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                <button onclick="saveMaintenance()" id="saveMaintenanceBtn" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
                     הוסף טיפול
                 </button>
             </div>
@@ -269,6 +269,7 @@
         let cars = [];
         let editingCarId = null;
         let selectedCarId = null;
+        let editingMaintenanceId = null;
         let tempCarImage = null;
         let tempMaintenanceImages = [];
 
@@ -658,8 +659,23 @@
                                 ${m.kilometers ? `<p class="text-blue-600 text-sm font-semibold">📍 ${Number(m.kilometers).toLocaleString()} ק"מ</p>` : ''}
                             </div>
                         </div>
-                        <div class="text-left">
-                            <p class="text-2xl font-bold text-green-600">${m.cost} ₪</p>
+                        <div class="text-left flex items-start gap-2">
+                            <div>
+                                <p class="text-2xl font-bold text-green-600">${m.cost} ₪</p>
+                            </div>
+                            <div class="flex gap-1">
+                                <button onclick="editMaintenance(${m.id})" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition" title="ערוך טיפול">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                                    </svg>
+                                </button>
+                                <button onclick="deleteMaintenance(${m.id})" class="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition" title="מחק טיפול">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="3 6 5 6 21 6"></polyline>
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
                     </div>
                     ${m.description ? `<p class="text-gray-700 bg-gray-50 p-3 rounded-lg mb-3">${m.description}</p>` : ''}
@@ -685,7 +701,10 @@
 
         // Show maintenance form
         function showMaintenanceForm() {
+            editingMaintenanceId = null;
             tempMaintenanceImages = [];
+            document.getElementById('maintenanceModalTitle').textContent = 'הוספת טיפול';
+            document.getElementById('saveMaintenanceBtn').textContent = 'הוסף טיפול';
             document.getElementById('maintenanceDate').value = new Date().toISOString().split('T')[0];
             document.getElementById('kilometers').value = '';
             document.getElementById('partName').value = '';
@@ -693,6 +712,38 @@
             document.getElementById('cost').value = '';
             displayMaintenanceImagesPreview();
             document.getElementById('maintenanceModal').classList.remove('hidden');
+        }
+
+        // Edit maintenance
+        function editMaintenance(maintenanceId) {
+            const car = cars.find(c => c.id === selectedCarId);
+            const maintenance = car.maintenanceHistory.find(m => m.id === maintenanceId);
+            if (!maintenance) return;
+            
+            editingMaintenanceId = maintenanceId;
+            tempMaintenanceImages = maintenance.images ? [...maintenance.images] : [];
+            
+            document.getElementById('maintenanceModalTitle').textContent = 'עריכת טיפול';
+            document.getElementById('saveMaintenanceBtn').textContent = 'עדכן טיפול';
+            document.getElementById('maintenanceDate').value = maintenance.date;
+            document.getElementById('kilometers').value = maintenance.kilometers || '';
+            document.getElementById('partName').value = maintenance.partName;
+            document.getElementById('description').value = maintenance.description || '';
+            document.getElementById('cost').value = maintenance.cost;
+            displayMaintenanceImagesPreview();
+            document.getElementById('maintenanceModal').classList.remove('hidden');
+        }
+
+        // Delete maintenance
+        function deleteMaintenance(maintenanceId) {
+            if (!confirm('האם אתה בטוח שברצונך למחוק טיפול זה?')) return;
+            
+            const carIndex = cars.findIndex(c => c.id === selectedCarId);
+            cars[carIndex].maintenanceHistory = cars[carIndex].maintenanceHistory.filter(m => m.id !== maintenanceId);
+            
+            saveData();
+            renderMaintenanceList(cars[carIndex]);
+            renderCars();
         }
 
         // Save maintenance
@@ -706,8 +757,7 @@
                 return;
             }
             
-            const maintenance = {
-                id: Date.now(),
+            const maintenanceData = {
                 date: document.getElementById('maintenanceDate').value,
                 kilometers,
                 partName,
@@ -720,16 +770,30 @@
             if (!cars[carIndex].maintenanceHistory) {
                 cars[carIndex].maintenanceHistory = [];
             }
-            cars[carIndex].maintenanceHistory.push(maintenance);
+            
+            if (editingMaintenanceId) {
+                const maintenanceIndex = cars[carIndex].maintenanceHistory.findIndex(m => m.id === editingMaintenanceId);
+                cars[carIndex].maintenanceHistory[maintenanceIndex] = {
+                    ...cars[carIndex].maintenanceHistory[maintenanceIndex],
+                    ...maintenanceData
+                };
+            } else {
+                cars[carIndex].maintenanceHistory.push({
+                    id: Date.now(),
+                    ...maintenanceData
+                });
+            }
             
             saveData();
             renderMaintenanceList(cars[carIndex]);
+            renderCars();
             closeMaintenanceModal();
         }
 
         // Close maintenance modal
         function closeMaintenanceModal() {
             document.getElementById('maintenanceModal').classList.add('hidden');
+            editingMaintenanceId = null;
             tempMaintenanceImages = [];
         }
 
