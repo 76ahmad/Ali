@@ -145,17 +145,32 @@
                 
                 <div>
                     <label class="block text-gray-700 font-semibold mb-2">סוג רכב</label>
-                    <input type="text" id="carType" class="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
+                    <input type="text" id="carType" placeholder="טויוטה, מרצדס, וכו'" class="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
                 </div>
                 
                 <div>
                     <label class="block text-gray-700 font-semibold mb-2">דגם</label>
-                    <input type="text" id="model" class="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
+                    <input type="text" id="model" placeholder="קורולה, אלטימה, וכו'" class="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
                 </div>
                 
                 <div>
                     <label class="block text-gray-700 font-semibold mb-2">שנת ייצור</label>
-                    <input type="text" id="year" class="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
+                    <input type="text" id="year" placeholder="2020" class="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-2">קוד רכב (VIN)</label>
+                    <input type="text" id="carCode" placeholder="17 ספרות" class="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-2">סוג מנוע</label>
+                    <input type="text" id="engineType" placeholder="בנזין, דיזל, היברידי, חשמלי" class="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-2">הספק מנוע</label>
+                    <input type="text" id="enginePower" placeholder="150 כ״ס / 2000 סמ״ק" class="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
                 </div>
             </div>
 
@@ -440,6 +455,18 @@
                                 <span class="text-gray-600">שנה:</span>
                                 <span class="font-semibold">${car.year || '-'}</span>
                             </div>
+                            ${car.engineType ? `
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-600">מנוע:</span>
+                                    <span class="font-semibold">${car.engineType}</span>
+                                </div>
+                            ` : ''}
+                            ${car.enginePower ? `
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-600">הספק:</span>
+                                    <span class="font-semibold">${car.enginePower}</span>
+                                </div>
+                            ` : ''}
                         </div>
 
                         <div class="border-t pt-4">
@@ -503,6 +530,9 @@
             document.getElementById('carType').value = '';
             document.getElementById('model').value = '';
             document.getElementById('year').value = '';
+            document.getElementById('carCode').value = '';
+            document.getElementById('engineType').value = '';
+            document.getElementById('enginePower').value = '';
             displayCarImagePreview();
             document.getElementById('carModal').classList.remove('hidden');
         }
@@ -521,6 +551,9 @@
             document.getElementById('carType').value = car.carType || '';
             document.getElementById('model').value = car.model || '';
             document.getElementById('year').value = car.year || '';
+            document.getElementById('carCode').value = car.carCode || '';
+            document.getElementById('engineType').value = car.engineType || '';
+            document.getElementById('enginePower').value = car.enginePower || '';
             displayCarImagePreview();
             document.getElementById('carModal').classList.remove('hidden');
         }
@@ -542,6 +575,9 @@
                 carType: document.getElementById('carType').value.trim(),
                 model: document.getElementById('model').value.trim(),
                 year: document.getElementById('year').value.trim(),
+                carCode: document.getElementById('carCode').value.trim(),
+                engineType: document.getElementById('engineType').value.trim(),
+                enginePower: document.getElementById('enginePower').value.trim(),
                 image: tempCarImage
             };
             
@@ -622,6 +658,24 @@
                     <p class="text-gray-600 text-sm">שנה</p>
                     <p class="font-semibold">${car.year || '-'}</p>
                 </div>
+                ${car.carCode ? `
+                    <div>
+                        <p class="text-gray-600 text-sm">קוד רכב (VIN)</p>
+                        <p class="font-semibold text-xs">${car.carCode}</p>
+                    </div>
+                ` : ''}
+                ${car.engineType ? `
+                    <div>
+                        <p class="text-gray-600 text-sm">סוג מנוע</p>
+                        <p class="font-semibold">${car.engineType}</p>
+                    </div>
+                ` : ''}
+                ${car.enginePower ? `
+                    <div>
+                        <p class="text-gray-600 text-sm">הספק מנוע</p>
+                        <p class="font-semibold">${car.enginePower}</p>
+                    </div>
+                ` : ''}
             `;
             
             renderMaintenanceList(car);
@@ -901,6 +955,24 @@
                                 <span class="info-label">סוג רכב</span>
                                 <span class="info-value">${car.carType || '-'} ${car.model || ''}</span>
                             </div>
+                            ${car.carCode ? `
+                                <div class="info-item" style="grid-column: span 2;">
+                                    <span class="info-label">קוד רכב (VIN)</span>
+                                    <span class="info-value" style="font-size: 14px;">${car.carCode}</span>
+                                </div>
+                            ` : ''}
+                            ${car.engineType ? `
+                                <div class="info-item">
+                                    <span class="info-label">סוג מנוע</span>
+                                    <span class="info-value">${car.engineType}</span>
+                                </div>
+                            ` : ''}
+                            ${car.enginePower ? `
+                                <div class="info-item">
+                                    <span class="info-label">הספק מנוע</span>
+                                    <span class="info-value">${car.enginePower}</span>
+                                </div>
+                            ` : ''}
                         </div>
                     </div>
 
