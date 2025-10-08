@@ -281,25 +281,12 @@
     </div>
 
     <script>
-        // Format phone number for WhatsApp (Israeli numbers)
-        function formatPhoneForWhatsApp(phone) {
-            if (!phone) return '';
-            
-            // Remove all non-digit characters
-            let cleaned = phone.replace(/\D/g, '');
-            
-            // If starts with 0, remove it (Israeli local format)
-            if (cleaned.startsWith('0')) {
-                cleaned = cleaned.substring(1);
-            }
-            
-            // If doesn't start with 972, add it
-            if (!cleaned.startsWith('972')) {
-                cleaned = '972' + cleaned;
-            }
-            
-            return cleaned;
-        }
+        let cars = [];
+        let editingCarId = null;
+        let selectedCarId = null;
+        let editingMaintenanceId = null;
+        let tempCarImage = null;
+        let tempMaintenanceImages = [];
 
         // Load data from localStorage
         function loadData() {
