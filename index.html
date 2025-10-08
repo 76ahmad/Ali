@@ -145,12 +145,14 @@
                 
                 <div>
                     <label class="block text-gray-700 font-semibold mb-2">סוג רכב</label>
-                    <input type="text" id="carType" placeholder="טויוטה, מרצדס, וכו'" class="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
+                    <input type="text" id="carType" list="carTypeSuggestions" placeholder="טויוטה, מרצדס, וכו'" class="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none" oninput="handleCarTypeChange()">
+                    <datalist id="carTypeSuggestions"></datalist>
                 </div>
                 
                 <div>
                     <label class="block text-gray-700 font-semibold mb-2">דגם</label>
-                    <input type="text" id="model" placeholder="קורולה, אלטימה, וכו'" class="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
+                    <input type="text" id="model" list="modelSuggestions" placeholder="קורולה, אלטימה, וכו'" class="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none" oninput="handleModelChange()">
+                    <datalist id="modelSuggestions"></datalist>
                 </div>
                 
                 <div>
@@ -299,6 +301,64 @@
             }
             
             return cleaned;
+        }
+
+        // Populate car type suggestions
+        function populateCarTypeSuggestions() {
+            const datalist = document.getElementById('carTypeSuggestions');
+            datalist.innerHTML = Object.keys(carModelsDatabase).map(brand => 
+                `<option value="${brand}">`
+            ).join('');
+        }
+
+        // Handle car type change
+        function handleCarTypeChange() {
+            const carType = document.getElementById('carType').value.trim();
+            const modelInput = document.getElementById('model');
+            const datalist = document.getElementById('modelSuggestions');
+            
+            // Clear model suggestions
+            datalist.innerHTML = '';
+            
+            // Find matching car type in database
+            const matchingBrand = Object.keys(carModelsDatabase).find(brand => 
+                brand.toLowerCase() === carType.toLowerCase()
+            );
+            
+            if (matchingBrand && carModelsDatabase[matchingBrand]) {
+                const models = Object.keys(carModelsDatabase[matchingBrand].models);
+                datalist.innerHTML = models.map(model => 
+                    `<option value="${model}">`
+                ).join('');
+            }
+        }
+
+        // Handle model change - auto-fill engine details
+        function handleModelChange() {
+            const carType = document.getElementById('carType').value.trim();
+            const model = document.getElementById('model').value.trim();
+            
+            // Find matching brand
+            const matchingBrand = Object.keys(carModelsDatabase).find(brand => 
+                brand.toLowerCase() === carType.toLowerCase()
+            );
+            
+            if (matchingBrand && carModelsDatabase[matchingBrand]) {
+                const models = carModelsDatabase[matchingBrand].models;
+                
+                // Find matching model
+                const matchingModel = Object.keys(models).find(m => 
+                    m.toLowerCase() === model.toLowerCase()
+                );
+                
+                if (matchingModel && models[matchingModel]) {
+                    const modelData = models[matchingModel];
+                    
+                    // Auto-fill engine type and power
+                    document.getElementById('engineType').value = modelData.engineType || '';
+                    document.getElementById('enginePower').value = modelData.enginePower || '';
+                }
+            }
         }
 
         // Load data from localStorage
