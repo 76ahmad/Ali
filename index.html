@@ -935,6 +935,9 @@
         // Load Maintenance History
         async function loadMaintenanceHistory(carId) {
             try {
+                // Get car data first
+                const car = cars.find(c => c.id === carId);
+                
                 const snapshot = await db.collection('maintenance')
                     .where('carId', '==', carId)
                     .get();
@@ -967,7 +970,7 @@
                                     ${m.kilometers ? `<div class="text-sm text-gray-600">🚗 ${m.kilometers} ק״מ</div>` : ''}
                                 </div>
                                 <div class="flex gap-2">
-                                    ${m.partName ? `<button onclick="orderSparePart('${m.partName.replace(/'/g, "\\'")}', '${car.carType || ''}', '${car.model || ''}', '${car.year || ''}')" class="text-green-600 hover:underline text-sm">📦 הזמן חלק</button>` : ''}
+                                    ${m.partName && car ? `<button onclick="orderSparePart('${m.partName.replace(/'/g, "\\'")}', '${car.carType || ''}', '${car.model || ''}', '${car.year || ''}')" class="text-green-600 hover:underline text-sm">📦 הזמן חלק</button>` : ''}
                                     <button onclick="printMaintenance('${m.id}')" class="text-purple-600 hover:underline text-sm">🖨️ הדפס</button>
                                     <button onclick="editMaintenance('${m.id}')" class="text-blue-600 hover:underline text-sm">עריכה</button>
                                     <button onclick="deleteMaintenance('${m.id}')" class="text-red-600 hover:underline text-sm">מחיקה</button>
@@ -1176,10 +1179,11 @@
                 const m = doc.data();
                 editingMaintenanceId = maintenanceId;
                 
+                document.getElementById('maintenanceDate').value = m.date || '';
+                document.getElementById('kilometers').value = m.kilometers || '';
+                document.getElementById('partName').value = m.partName || '';
                 document.getElementById('workDescription').value = m.workDescription || '';
-                document.getElementById('parts').value = m.parts || '';
                 document.getElementById('totalCost').value = m.totalCost || '';
-                document.getElementById('notes').value = m.notes || '';
                 
                 maintenanceImages = m.images || [];
                 
