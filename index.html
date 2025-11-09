@@ -4,396 +4,730 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>מערכת ניהול מוסך</title>
+
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Firebase v9 Compatible Mode -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+
     <style>
-        * {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        .image-preview {
-            position: relative;
-            display: inline-block;
-        }
-        .image-preview img {
-            object-fit: cover;
-        }
-        .delete-image-btn {
-            position: absolute;
-            top: 5px;
-            left: 5px;
-            background: rgba(239, 68, 68, 0.9);
-            color: white;
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3b82f6;
             border-radius: 50%;
-            width: 28px;
-            height: 28px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-size: 18px;
-            font-weight: bold;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
         }
-        .delete-image-btn:hover {
-            background: rgba(220, 38, 38, 1);
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
+
 </head>
-<body class="bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen">
-    <div id="app" class="container mx-auto px-4 py-8">
+<body class="bg-gray-100 min-h-screen">
+
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="fixed inset-0 bg-white z-50 flex items-center justify-center">
+        <div class="text-center">
+            <div class="loader mx-auto mb-4"></div>
+            <p class="text-gray-600">טוען מערכת...</p>
+        </div>
+    </div>
+
+    <!-- Login Screen -->
+    <div id="loginScreen" class="hidden fixed inset-0 bg-blue-50 z-40 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-xl p-8 max-w-md w-full">
+            <h1 class="text-2xl font-bold text-center mb-6">מערכת ניהול מוסך</h1>
+            
+            <div id="errorMsg" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4"></div>
+            <div id="successMsg" class="hidden bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4"></div>
+            
+            <form id="loginForm">
+                <div class="mb-4">
+                    <label class="block text-gray-700 mb-2">אימייל</label>
+                    <input type="email" id="email" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                </div>
+                
+                <div class="mb-6">
+                    <label class="block text-gray-700 mb-2">סיסמה</label>
+                    <input type="password" id="password" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                </div>
+                
+                <button type="submit" id="authBtn" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700">
+                    התחבר
+                </button>
+            </form>
+            
+            <p class="text-center mt-4">
+                <a href="#" id="toggleAuth" class="text-blue-600 hover:underline">אין לך חשבון? הירשם</a>
+            </p>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="mainApp" class="hidden container mx-auto px-4 py-8">
         <!-- Header -->
-        <div class="bg-white rounded-2xl shadow-xl p-8 mb-8">
-            <div class="flex items-center justify-between mb-8 flex-wrap gap-4">
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <div class="flex justify-between items-center mb-4 flex-wrap gap-3">
                 <div class="flex items-center gap-3">
-                    <div class="bg-blue-600 p-3 rounded-xl">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/>
-                            <circle cx="7" cy="17" r="2"/>
-                            <path d="M9 17h6"/>
-                            <circle cx="17" cy="17" r="2"/>
-                        </svg>
+                    <h1 class="text-2xl font-bold">מערכת ניהול מוסך</h1>
+                    <div class="flex items-center gap-2 bg-blue-50 px-3 py-2 rounded-lg">
+                        <span class="text-gray-600">👤</span>
+                        <span id="userName" class="font-bold text-blue-700">משתמש</span>
+                        <button onclick="editUserName()" class="text-blue-600 hover:text-blue-800" title="ערוך שם">
+                            ✏️
+                        </button>
                     </div>
-                    <h1 class="text-4xl font-bold text-gray-800">מערכת ניהול מוסך</h1>
                 </div>
-                <div class="flex gap-3">
-                    <button onclick="showAddCarForm()" class="flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="12" y1="5" x2="12" y2="19"></line>
-                            <line x1="5" y1="12" x2="19" y2="12"></line>
-                        </svg>
-                        הוסף רכב
-                    </button>
-                    <button onclick="exportToExcel()" class="flex items-center gap-2 bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                            <polyline points="7 10 12 15 17 10"></polyline>
-                            <line x1="12" y1="15" x2="12" y2="3"></line>
-                        </svg>
-                        ייצא לאקסל
-                    </button>
-                </div>
+                <button onclick="signOut()" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
+                    יציאה
+                </button>
             </div>
-
-            <div class="relative mb-6">
-                <svg class="absolute right-4 top-3.5 text-gray-400" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="11" cy="11" r="8"></circle>
-                    <path d="m21 21-4.35-4.35"></path>
-                </svg>
-                <input type="text" id="searchInput" onkeyup="filterCars()" placeholder="חיפוש לפי מספר רישוי או שם בעלים..." class="w-full pr-12 pl-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
+            
+            <div class="flex gap-4 mb-4 flex-wrap">
+                <button onclick="openCarModal()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                    + הוסף רכב
+                </button>
+                <button onclick="openCalendarModal()" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 flex items-center gap-2">
+                    📅 יומן פגישות
+                </button>
+                <button onclick="exportCSV()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                    ייצא נתונים
+                </button>
             </div>
-
-            <div class="mb-6">
-                <label class="block text-gray-700 font-semibold mb-2">סינון לפי סוג רכב</label>
-                <select id="carTypeFilter" onchange="filterCars()" class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
-                    <option value="">כל הרכבים</option>
-                </select>
-            </div>
-
-            <div class="text-gray-600 mb-4">
-                סך הכל רכבים: <span id="carCount" class="font-bold text-blue-600">0</span>
-            </div>
+            
+            <input type="text" id="searchBox" placeholder="חיפוש..." onkeyup="searchCars()" 
+                   class="w-full px-3 py-2 border rounded-lg">
         </div>
 
         <!-- Cars Grid -->
-        <div id="carsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-
+        <div id="carsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+        
         <!-- Empty State -->
-        <div id="emptyState" class="bg-white rounded-2xl shadow-xl p-12 text-center hidden">
-            <svg class="mx-auto text-gray-400 mb-4" xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/>
-                <circle cx="7" cy="17" r="2"/>
-                <path d="M9 17h6"/>
-                <circle cx="17" cy="17" r="2"/>
-            </svg>
-            <h3 class="text-2xl font-bold text-gray-600 mb-2">אין רכבים במערכת</h3>
-            <p class="text-gray-500">התחל על ידי הוספת רכב חדש</p>
+        <div id="emptyState" class="text-center py-12 hidden">
+            <p class="text-gray-500 text-xl">אין רכבים במערכת</p>
+            <button onclick="openCarModal()" class="mt-4 bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
+                הוסף רכב ראשון
+            </button>
         </div>
     </div>
 
-    <!-- Add/Edit Car Modal -->
-    <div id="carModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <h2 id="carModalTitle" class="text-2xl font-bold mb-6 text-gray-800">הוספת רכב חדש</h2>
+    <!-- Car Modal -->
+    <div id="carModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-lg p-6 max-w-2xl w-full my-8">
+            <h2 id="modalTitle" class="text-2xl font-bold mb-6 text-center">הוספת רכב חדש</h2>
             
-            <div class="mb-6">
-                <label class="block text-gray-700 font-semibold mb-2">תמונת הרכב</label>
-                <input type="file" id="carImageInput" accept="image/*" onchange="handleCarImageUpload(event)" class="hidden">
-                <div id="carImagePreview" class="mb-4"></div>
-                <button onclick="document.getElementById('carImageInput').click()" class="flex items-center gap-2 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                        <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                        <polyline points="21 15 16 10 5 21"></polyline>
-                    </svg>
-                    העלה תמונה
-                </button>
-            </div>
-            
-            <div class="grid grid-cols-2 gap-4 mb-6">
-                <div>
-                    <label class="block text-gray-700 font-semibold mb-2">מספר רישוי *</label>
-                    <input type="text" id="plateNumber" class="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
+            <form id="carForm">
+                <!-- תמונת הרכב -->
+                <div class="mb-4 text-center">
+                    <label class="block text-gray-700 font-bold mb-2">תמונת הרכב</label>
+                    <div class="flex justify-center">
+                        <label class="cursor-pointer bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg p-4 hover:bg-gray-50 flex items-center gap-2">
+                            <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                            <span class="text-gray-600">העלה תמונה</span>
+                            <input type="file" id="carImage" accept="image/*" class="hidden">
+                        </label>
+                    </div>
+                    <div id="imagePreview" class="mt-3"></div>
+                    <p class="text-xs text-green-600 mt-1">✓ דחיסה אוטומטית</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- מספר רישוי -->
+                    <div>
+                        <label class="block text-gray-700 font-bold mb-2">מספר רישוי *</label>
+                        <input type="text" id="plateNumber" required 
+                               class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                               placeholder="12-345-67">
+                    </div>
+                    
+                    <!-- שם הבעלים -->
+                    <div>
+                        <label class="block text-gray-700 font-bold mb-2">שם הבעלים *</label>
+                        <input type="text" id="ownerName" required
+                               class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                               placeholder="שם מלא">
+                    </div>
+                    
+                    <!-- סוג רכב -->
+                    <div>
+                        <label class="block text-gray-700 font-bold mb-2">סוג רכב</label>
+                        <input type="text" id="carType" list="carTypes"
+                               class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                               placeholder="טויוטה, מרצדס, מזדה">
+                        <datalist id="carTypes">
+                            <option value="טויוטה">
+                            <option value="הונדה">
+                            <option value="יונדאי">
+                            <option value="קיה">
+                            <option value="מזדה">
+                            <option value="מרצדס">
+                            <option value="BMW">
+                        </datalist>
+                    </div>
+                    
+                    <!-- מספר טלפון -->
+                    <div>
+                        <label class="block text-gray-700 font-bold mb-2">מספר טלפון</label>
+                        <input type="text" id="phone" 
+                               class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                               placeholder="050-1234567">
+                    </div>
+                    
+                    <!-- דגם -->
+                    <div>
+                        <label class="block text-gray-700 font-bold mb-2">דגם</label>
+                        <input type="text" id="model"
+                               class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                               placeholder="קורולה, אלנטרה, וכו'">
+                    </div>
+                    
+                    <!-- שנת ייצור -->
+                    <div>
+                        <label class="block text-gray-700 font-bold mb-2">שנת ייצור</label>
+                        <input type="number" id="year" min="1900" max="2030"
+                               class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                               placeholder="2020">
+                    </div>
+                    
+                    <!-- קוד רכב (VIN) -->
+                    <div>
+                        <label class="block text-gray-700 font-bold mb-2">קוד רכב (VIN)</label>
+                        <input type="text" id="vinCode" maxlength="17"
+                               class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                               placeholder="17 תווים">
+                    </div>
+                    
+                    <!-- קוד התנעה -->
+                    <div>
+                        <label class="block text-gray-700 font-bold mb-2">קוד התנעה (אימוביליזר)</label>
+                        <input type="text" id="immobilizerCode"
+                               class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                               placeholder="קוד סודי להתנעת הרכב">
+                    </div>
+                    
+                    <!-- סוג מנוע -->
+                    <div>
+                        <label class="block text-gray-700 font-bold mb-2">סוג מנוע</label>
+                        <select id="engineType" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                            <option value="">בחר...</option>
+                            <option value="בנזין">בנזין</option>
+                            <option value="דיזל">דיזל</option>
+                            <option value="היברידי">היברידי</option>
+                            <option value="חשמלי">חשמלי</option>
+                        </select>
+                    </div>
+                    
+                    <!-- הספק מנוע -->
+                    <div class="md:col-span-2">
+                        <label class="block text-gray-700 font-bold mb-2">הספק מנוע</label>
+                        <input type="text" id="enginePower"
+                               class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                               placeholder='150 כ"ס / 2000 סמ"ק'>
+                    </div>
                 </div>
                 
-                <div>
-                    <label class="block text-gray-700 font-semibold mb-2">שם הבעלים *</label>
-                    <input type="text" id="ownerName" class="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
+                <div class="flex gap-3 mt-6">
+                    <button type="submit" class="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-bold">
+                        שמור
+                    </button>
+                    <button type="button" onclick="closeCarModal()" class="flex-1 bg-gray-400 text-white px-6 py-3 rounded-lg hover:bg-gray-500 font-bold">
+                        ביטול
+                    </button>
                 </div>
-                
-                <div>
-                    <label class="block text-gray-700 font-semibold mb-2">מספר טלפון</label>
-                    <input type="text" id="phone" class="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
-                </div>
-                
-                <div>
-                    <label class="block text-gray-700 font-semibold mb-2">סוג רכב</label>
-                    <input type="text" id="carType" placeholder="טויוטה, מרצדס, וכו'" class="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
-                </div>
-                
-                <div>
-                    <label class="block text-gray-700 font-semibold mb-2">דגם</label>
-                    <input type="text" id="model" placeholder="קורולה, אלטימה, וכו'" class="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
-                </div>
-                
-                <div>
-                    <label class="block text-gray-700 font-semibold mb-2">שנת ייצור</label>
-                    <input type="text" id="year" placeholder="2020" class="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
-                </div>
-
-                <div>
-                    <label class="block text-gray-700 font-semibold mb-2">קוד רכב (VIN)</label>
-                    <input type="text" id="carCode" placeholder="17 ספרות" class="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
-                </div>
-
-                <div>
-                    <label class="block text-gray-700 font-semibold mb-2">סוג מנוע</label>
-                    <input type="text" id="engineType" placeholder="בנזין, דיזל, היברידי, חשמלי" class="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
-                </div>
-
-                <div>
-                    <label class="block text-gray-700 font-semibold mb-2">הספק מנוע</label>
-                    <input type="text" id="enginePower" placeholder="150 כ״ס / 2000 סמ״ק" class="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
-                </div>
-            </div>
-
-            <div class="flex gap-3 justify-end">
-                <button onclick="closeCarModal()" class="px-6 py-2 border-2 border-gray-300 rounded-lg hover:bg-gray-100 transition">
-                    ביטול
-                </button>
-                <button onclick="saveCar()" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-                    שמור
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Car Details Modal -->
-    <div id="detailsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-2xl p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div class="flex justify-between items-start mb-6">
-                <div>
-                    <h2 id="detailsPlate" class="text-3xl font-bold text-gray-800 mb-2"></h2>
-                    <p id="detailsOwner" class="text-xl text-gray-600"></p>
-                </div>
-                <button onclick="closeDetailsModal()" class="text-gray-500 hover:text-gray-700 text-2xl">
-                    ×
-                </button>
-            </div>
-
-            <div id="detailsCarImage" class="mb-6"></div>
-
-            <div id="detailsInfo" class="grid grid-cols-3 gap-4 mb-8 bg-gray-50 p-6 rounded-xl"></div>
-
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-2xl font-bold text-gray-800">היסטוריית טיפולים</h3>
-                <button onclick="showMaintenanceForm()" class="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="12" y1="5" x2="12" y2="19"></line>
-                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                    </svg>
-                    הוסף טיפול
-                </button>
-            </div>
-
-            <div id="maintenanceList"></div>
+            </form>
         </div>
     </div>
 
     <!-- Maintenance Modal -->
-    <div id="maintenanceModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <h2 id="maintenanceModalTitle" class="text-2xl font-bold mb-6 text-gray-800">הוספת טיפול</h2>
+    <div id="maintenanceModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-lg p-8 max-w-xl w-full my-8">
+            <h2 class="text-2xl font-bold mb-6 text-center">הוספת טיפול</h2>
             
-            <div class="space-y-4 mb-6">
+            <form id="maintenanceForm" class="space-y-4">
+                <!-- תאריך -->
                 <div>
-                    <label class="block text-gray-700 font-semibold mb-2">תאריך *</label>
-                    <input type="date" id="maintenanceDate" class="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
+                    <label class="block text-gray-700 font-bold mb-2 text-right">תאריך *</label>
+                    <input type="date" id="maintenanceDate" 
+                           class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-blue-500 text-right"
+                           value="">
                 </div>
                 
+                <!-- קילומטראז' -->
                 <div>
-                    <label class="block text-gray-700 font-semibold mb-2">קילומטראז' *</label>
-                    <input type="number" id="kilometers" placeholder="מספר הקילומטרים" class="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
+                    <label class="block text-gray-700 font-bold mb-2 text-right">קילומטראז' *</label>
+                    <input type="number" id="kilometers" 
+                           class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-blue-500 text-right"
+                           placeholder="מספר הקילומטרים">
                 </div>
                 
+                <!-- שם החלק -->
                 <div>
-                    <label class="block text-gray-700 font-semibold mb-2">שם החלק *</label>
-                    <input type="text" id="partName" class="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
+                    <label class="block text-gray-700 font-bold mb-2 text-right">שם החלק *</label>
+                    <input type="text" id="partName" 
+                           class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-blue-500 text-right"
+                           placeholder="">
                 </div>
                 
+                <!-- תיאור העבודה -->
                 <div>
-                    <label class="block text-gray-700 font-semibold mb-2">תיאור העבודה</label>
-                    <textarea id="description" rows="3" class="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"></textarea>
+                    <label class="block text-gray-700 font-bold mb-2 text-right">תיאור העבודה</label>
+                    <textarea id="workDescription" rows="4" 
+                              class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-blue-500 text-right resize-none"
+                              placeholder=""></textarea>
                 </div>
                 
+                <!-- עלות (₪) -->
                 <div>
-                    <label class="block text-gray-700 font-semibold mb-2">עלות (₪) *</label>
-                    <input type="number" id="cost" class="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
+                    <label class="block text-gray-700 font-bold mb-2 text-right">עלות (₪) *</label>
+                    <input type="number" id="totalCost" step="0.01"
+                           class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-blue-500 text-right"
+                           placeholder="">
                 </div>
-
+                
+                <!-- תמונות התקלה -->
                 <div>
-                    <label class="block text-gray-700 font-semibold mb-2">תמונות התקלה</label>
-                    <input type="file" id="maintenanceImagesInput" accept="image/*" multiple onchange="handleMaintenanceImagesUpload(event)" class="hidden">
-                    <div id="maintenanceImagesPreview" class="mb-4 grid grid-cols-3 gap-2"></div>
-                    <button type="button" onclick="document.getElementById('maintenanceImagesInput').click()" class="flex items-center gap-2 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                            <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                            <polyline points="21 15 16 10 5 21"></polyline>
-                        </svg>
-                        העלה תמונות
+                    <label class="block text-gray-700 font-bold mb-2 text-right">תמונות התקלה</label>
+                    <div class="flex items-center justify-end">
+                        <label class="cursor-pointer bg-white border border-gray-300 rounded-lg px-4 py-2 hover:bg-gray-50 flex items-center gap-2">
+                            <span class="text-gray-600">העלה תמונות</span>
+                            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                            <input type="file" id="maintenanceImages" accept="image/*" multiple class="hidden">
+                        </label>
+                    </div>
+                    <div id="maintenanceImagesPreview" class="mt-3 grid grid-cols-3 gap-2"></div>
+                </div>
+                
+                <div class="flex gap-3 mt-6">
+                    <button type="submit" class="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-bold">
+                        הוסף טיפול
+                    </button>
+                    <button type="button" onclick="closeMaintenanceModal()" class="flex-1 bg-gray-300 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-400 font-bold">
+                        ביטול
                     </button>
                 </div>
-            </div>
+            </form>
+        </div>
+    </div>
 
-            <div class="flex gap-3 justify-end">
-                <button onclick="closeMaintenanceModal()" class="px-6 py-2 border-2 border-gray-300 rounded-lg hover:bg-gray-100 transition">
-                    ביטול
-                </button>
-                <button onclick="saveMaintenance()" id="saveMaintenanceBtn" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-                    הוסף טיפול
-                </button>
+    <!-- Car Details Modal -->
+    <div id="carDetailsModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="sticky top-0 bg-white border-b p-6 flex justify-between items-center">
+                <h2 class="text-2xl font-bold" id="detailsPlateNumber"></h2>
+                <button onclick="closeCarDetailsModal()" class="text-gray-500 hover:text-gray-700 text-3xl leading-none">&times;</button>
+            </div>
+            
+            <div class="p-6">
+                <div id="carDetailsContent"></div>
+                
+                <div class="mt-6">
+                    <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
+                        <h3 class="text-xl font-bold">היסטוריית טיפולים</h3>
+                        <div class="flex gap-2">
+                            <button onclick="openAppointmentModal()" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 flex items-center gap-1 text-sm">
+                                📅 קבע פגישה
+                            </button>
+                            <button onclick="openMaintenanceModal()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                                + הוסף טיפול
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="maintenanceHistory" class="space-y-4"></div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Image Viewer Modal -->
-    <div id="imageViewerModal" class="hidden fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center p-4 z-50" onclick="closeImageViewer()">
-        <button onclick="closeImageViewer()" class="absolute top-4 left-4 text-white text-4xl hover:text-gray-300">×</button>
-        <img id="viewerImage" src="" alt="" class="max-w-full max-h-full object-contain" onclick="event.stopPropagation()">
+    <!-- Calendar Modal -->
+    <div id="calendarModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="sticky top-0 bg-white border-b p-6 flex justify-between items-center">
+                <h2 class="text-2xl font-bold">📅 יומן פגישות</h2>
+                <button onclick="closeCalendarModal()" class="text-gray-500 hover:text-gray-700 text-3xl leading-none">&times;</button>
+            </div>
+            
+            <div class="p-6">
+                <!-- Calendar Navigation -->
+                <div class="flex justify-between items-center mb-6">
+                    <button onclick="previousMonth()" class="bg-gray-200 px-4 py-2 rounded hover:bg-gray-300">
+                        ←
+                    </button>
+                    <h3 class="text-xl font-bold" id="currentMonthYear"></h3>
+                    <button onclick="nextMonth()" class="bg-gray-200 px-4 py-2 rounded hover:bg-gray-300">
+                        →
+                    </button>
+                </div>
+                
+                <!-- Calendar Grid -->
+                <div class="grid grid-cols-7 gap-2 mb-6">
+                    <div class="text-center font-bold p-2">א׳</div>
+                    <div class="text-center font-bold p-2">ב׳</div>
+                    <div class="text-center font-bold p-2">ג׳</div>
+                    <div class="text-center font-bold p-2">ד׳</div>
+                    <div class="text-center font-bold p-2">ה׳</div>
+                    <div class="text-center font-bold p-2">ו׳</div>
+                    <div class="text-center font-bold p-2">ש׳</div>
+                </div>
+                <div id="calendarGrid" class="grid grid-cols-7 gap-2"></div>
+                
+                <!-- Appointments List for Selected Day -->
+                <div class="mt-6">
+                    <h3 class="text-xl font-bold mb-4" id="selectedDayTitle">פגישות היום</h3>
+                    <div id="dayAppointments"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Appointment Modal -->
+    <div id="appointmentModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="bg-purple-600 text-white p-6 rounded-t-lg">
+                <h2 class="text-2xl font-bold">📅 פגישה חדשה</h2>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6">
+                <!-- Left side - Form -->
+                <div>
+                    <form id="appointmentForm">
+                        <div class="mb-4">
+                            <label class="block text-gray-700 font-bold mb-2">רכב</label>
+                            <select id="appointmentCar" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-purple-500">
+                                <option value="">בחר רכב...</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="block text-gray-700 font-bold mb-2">תאריך</label>
+                            <input type="date" id="appointmentDate" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-purple-500">
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="block text-gray-700 font-bold mb-2">שעה (24 שעות)</label>
+                            <input type="time" id="appointmentTime" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-purple-500">
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="block text-gray-700 font-bold mb-2">סוג הפגישה</label>
+                            <select id="appointmentType" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-purple-500">
+                                <option value="">בחר סוג...</option>
+                                <option value="שירות">שירות / טיפול</option>
+                                <option value="תיקון">תיקון</option>
+                                <option value="בדיקה">בדיקה תקופתית</option>
+                                <option value="אחר">אחר</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="block text-gray-700 font-bold mb-2">הערות</label>
+                            <textarea id="appointmentNotes" rows="3" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-purple-500" placeholder="הערות נוספות..."></textarea>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="flex items-center">
+                                <input type="checkbox" id="appointmentReminder" class="ml-2">
+                                <span class="text-gray-700">שלח תזכורת ווטסאפ ללקוח</span>
+                            </label>
+                        </div>
+                        
+                        <div class="flex gap-2">
+                            <button type="submit" class="bg-purple-600 text-white px-6 py-2 rounded hover:bg-purple-700">
+                                שמור פגישה
+                            </button>
+                            <button type="button" onclick="closeAppointmentModal()" class="bg-gray-400 text-white px-6 py-2 rounded hover:bg-gray-500">
+                                ביטול
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
+                <!-- Right side - Mini Calendar -->
+                <div class="border-r pr-6">
+                    <h3 class="text-lg font-bold mb-4 text-center">פגישות קיימות</h3>
+                    
+                    <!-- Mini Calendar Navigation -->
+                    <div class="flex justify-between items-center mb-4">
+                        <button type="button" onclick="previousMonthMini()" class="bg-gray-200 px-3 py-1 rounded hover:bg-gray-300">
+                            ←
+                        </button>
+                        <h4 class="font-bold" id="miniMonthYear"></h4>
+                        <button type="button" onclick="nextMonthMini()" class="bg-gray-200 px-3 py-1 rounded hover:bg-gray-300">
+                            →
+                        </button>
+                    </div>
+                    
+                    <!-- Mini Calendar Grid -->
+                    <div class="grid grid-cols-7 gap-1 mb-2">
+                        <div class="text-center text-xs font-bold p-1">א׳</div>
+                        <div class="text-center text-xs font-bold p-1">ב׳</div>
+                        <div class="text-center text-xs font-bold p-1">ג׳</div>
+                        <div class="text-center text-xs font-bold p-1">ד׳</div>
+                        <div class="text-center text-xs font-bold p-1">ה׳</div>
+                        <div class="text-center text-xs font-bold p-1">ו׳</div>
+                        <div class="text-center text-xs font-bold p-1">ש׳</div>
+                    </div>
+                    <div id="miniCalendarGrid" class="grid grid-cols-7 gap-1 mb-4"></div>
+                    
+                    <!-- Selected Day Appointments -->
+                    <div id="miniDayAppointments" class="text-sm max-h-60 overflow-y-auto"></div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCdSRfJCoU6xwDych3l_3K_hBZBHOi9jVg",
+            authDomain: "garage-17263.firebaseapp.com",
+            projectId: "garage-17263",
+            storageBucket: "garage-17263.firebasestorage.app",
+            messagingSenderId: "332265903935",
+            appId: "1:332265903935:web:237c0787a161fd36a7a58a",
+            measurementId: "G-KLLCPECCDQ"
+        };
+
+        // Initialize Firebase
+        let app, db, auth;
+        let currentUser = null;
         let cars = [];
+        let appointments = [];
         let editingCarId = null;
-        let selectedCarId = null;
+        let currentCarId = null;
         let editingMaintenanceId = null;
-        let tempCarImage = null;
-        let tempMaintenanceImages = [];
+        let editingAppointmentId = null;
+        let isRegisterMode = false;
+        let maintenanceImages = [];
+        let currentMonth = new Date().getMonth();
+        let currentYear = new Date().getFullYear();
+        let selectedDate = null;
+        let miniMonth = new Date().getMonth();
+        let miniYear = new Date().getFullYear();
+        let miniSelectedDate = null;
 
-        // Load data from localStorage
-        function loadData() {
-            const savedCars = localStorage.getItem('garageCars');
-            if (savedCars) {
-                cars = JSON.parse(savedCars);
-            }
-            updateCarTypeFilter();
-            renderCars();
+        try {
+            app = firebase.initializeApp(firebaseConfig);
+            db = firebase.firestore();
+            auth = firebase.auth();
+            console.log('Firebase initialized with maintenance system!');
+        } catch (error) {
+            console.error('Firebase initialization error:', error);
+            document.getElementById('loadingScreen').innerHTML = 
+                '<div class="text-center"><p class="text-red-600">שגיאה בטעינת המערכת</p></div>';
         }
 
-        // Update car type filter options
-        function updateCarTypeFilter() {
-            const carTypes = [...new Set(cars.map(car => car.carType).filter(type => type && type.trim()))];
-            const filterSelect = document.getElementById('carTypeFilter');
-            
-            filterSelect.innerHTML = '<option value="">כל הרכבים</option>' + 
-                carTypes.sort().map(type => `<option value="${type}">${type}</option>`).join('');
-        }
-
-        // Save data to localStorage
-        function saveData() {
-            localStorage.setItem('garageCars', JSON.stringify(cars));
-        }
-
-        // Handle car image upload
-        function handleCarImageUpload(event) {
-            const file = event.target.files[0];
-            if (file) {
+        // Compress Image Function
+        async function compressImage(file, maxSizeKB = 700) {
+            return new Promise((resolve, reject) => {
                 const reader = new FileReader();
-                reader.onload = function(e) {
-                    tempCarImage = e.target.result;
-                    displayCarImagePreview();
-                };
                 reader.readAsDataURL(file);
-            }
-        }
-
-        // Display car image preview
-        function displayCarImagePreview() {
-            const preview = document.getElementById('carImagePreview');
-            if (tempCarImage) {
-                preview.innerHTML = `
-                    <div class="image-preview">
-                        <img src="${tempCarImage}" alt="Car" class="w-full h-48 rounded-lg">
-                        <span class="delete-image-btn" onclick="deleteCarImage()">×</span>
-                    </div>
-                `;
-            } else {
-                preview.innerHTML = '';
-            }
-        }
-
-        // Delete car image
-        function deleteCarImage() {
-            tempCarImage = null;
-            displayCarImagePreview();
-        }
-
-        // Handle maintenance images upload
-        function handleMaintenanceImagesUpload(event) {
-            const files = Array.from(event.target.files);
-            files.forEach(file => {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    tempMaintenanceImages.push(e.target.result);
-                    displayMaintenanceImagesPreview();
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+                        
+                        const maxDimension = 1200;
+                        if (width > height && width > maxDimension) {
+                            height = (height * maxDimension) / width;
+                            width = maxDimension;
+                        } else if (height > maxDimension) {
+                            width = (width * maxDimension) / height;
+                            height = maxDimension;
+                        }
+                        
+                        canvas.width = width;
+                        canvas.height = height;
+                        
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        let quality = 0.8;
+                        let compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+                        
+                        while (compressedDataUrl.length > maxSizeKB * 1024 * 1.37 && quality > 0.1) {
+                            quality -= 0.1;
+                            compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+                        }
+                        
+                        resolve(compressedDataUrl);
+                    };
+                    img.onerror = reject;
                 };
-                reader.readAsDataURL(file);
+                reader.onerror = reject;
             });
         }
 
-        // Display maintenance images preview
-        function displayMaintenanceImagesPreview() {
-            const preview = document.getElementById('maintenanceImagesPreview');
-            preview.innerHTML = tempMaintenanceImages.map((img, index) => `
-                <div class="image-preview">
-                    <img src="${img}" alt="Maintenance ${index + 1}" class="w-full h-24 rounded-lg cursor-pointer" onclick="viewImage('${img}')">
-                    <span class="delete-image-btn" onclick="deleteMaintenanceImage(${index})">×</span>
-                </div>
-            `).join('');
+        // Calculate Total Cost
+        function calculateTotalCost() {
+            const partsCost = parseFloat(document.getElementById('partsCost').value) || 0;
+            const laborCost = parseFloat(document.getElementById('laborCost').value) || 0;
+            const otherCost = parseFloat(document.getElementById('otherCost').value) || 0;
+            const total = partsCost + laborCost + otherCost;
+            document.getElementById('totalCostDisplay').textContent = total.toFixed(2);
+            return total;
         }
 
-        // Delete maintenance image
-        function deleteMaintenanceImage(index) {
-            tempMaintenanceImages.splice(index, 1);
-            displayMaintenanceImagesPreview();
+        // Auth State Observer
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('mainApp').classList.remove('hidden');
+                await loadUserName();
+                loadCars();
+                loadAppointments();
+            } else {
+                currentUser = null;
+                document.getElementById('loginScreen').classList.remove('hidden');
+                document.getElementById('mainApp').classList.add('hidden');
+            }
+            
+            document.getElementById('loadingScreen').classList.add('hidden');
+        });
+
+        // Load User Name
+        async function loadUserName() {
+            try {
+                const userDoc = await db.collection('users').doc(currentUser.uid).get();
+                if (userDoc.exists && userDoc.data().displayName) {
+                    document.getElementById('userName').textContent = userDoc.data().displayName;
+                } else {
+                    document.getElementById('userName').textContent = currentUser.email.split('@')[0];
+                }
+            } catch (error) {
+                console.error('Error loading user name:', error);
+                document.getElementById('userName').textContent = currentUser.email.split('@')[0];
+            }
         }
 
-        // View image in full screen
-        function viewImage(src) {
-            document.getElementById('viewerImage').src = src;
-            document.getElementById('imageViewerModal').classList.remove('hidden');
+        // Edit User Name
+        function editUserName() {
+            const currentName = document.getElementById('userName').textContent;
+            const newName = prompt('הכנס שם חדש:', currentName);
+            
+            if (newName && newName.trim() !== '' && newName !== currentName) {
+                saveUserName(newName.trim());
+            }
         }
 
-        // Close image viewer
-        function closeImageViewer() {
-            document.getElementById('imageViewerModal').classList.add('hidden');
+        // Save User Name
+        async function saveUserName(name) {
+            try {
+                await db.collection('users').doc(currentUser.uid).set({
+                    displayName: name,
+                    email: currentUser.email,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
+                
+                document.getElementById('userName').textContent = name;
+                alert('השם עודכן בהצלחה!');
+            } catch (error) {
+                console.error('Error saving user name:', error);
+                alert('שגיאה בשמירת השם');
+            }
         }
 
-        // Render cars grid
-        function renderCars() {
+        // Toggle Auth Mode
+        document.getElementById('toggleAuth').addEventListener('click', (e) => {
+            e.preventDefault();
+            isRegisterMode = !isRegisterMode;
+            const authBtn = document.getElementById('authBtn');
+            const toggleLink = document.getElementById('toggleAuth');
+            
+            if (isRegisterMode) {
+                authBtn.textContent = 'הירשם';
+                toggleLink.textContent = 'יש לך חשבון? התחבר';
+            } else {
+                authBtn.textContent = 'התחבר';
+                toggleLink.textContent = 'אין לך חשבון? הירשם';
+            }
+        });
+
+        // Login/Register Form
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const authBtn = document.getElementById('authBtn');
+            
+            authBtn.disabled = true;
+            authBtn.textContent = 'מעבד...';
+            
+            try {
+                if (isRegisterMode) {
+                    await auth.createUserWithEmailAndPassword(email, password);
+                    showMessage('החשבון נוצר בהצלחה!', 'success');
+                } else {
+                    await auth.signInWithEmailAndPassword(email, password);
+                    showMessage('התחברת בהצלחה!', 'success');
+                }
+            } catch (error) {
+                console.error('Auth error:', error);
+                let message = 'שגיאה';
+                
+                switch(error.code) {
+                    case 'auth/user-not-found':
+                        message = 'המשתמש לא קיים';
+                        break;
+                    case 'auth/wrong-password':
+                        message = 'סיסמה שגויה';
+                        break;
+                    case 'auth/email-already-in-use':
+                        message = 'האימייל כבר בשימוש';
+                        break;
+                    case 'auth/weak-password':
+                        message = 'הסיסמה חלשה מדי';
+                        break;
+                    case 'auth/invalid-email':
+                        message = 'אימייל לא תקין';
+                        break;
+                }
+                
+                showMessage(message, 'error');
+            } finally {
+                authBtn.disabled = false;
+                authBtn.textContent = isRegisterMode ? 'הירשם' : 'התחבר';
+            }
+        });
+
+        // Load Cars
+        async function loadCars() {
+            try {
+                const snapshot = await db.collection('cars')
+                    .where('userId', '==', currentUser.uid)
+                    .get();
+                
+                cars = [];
+                snapshot.forEach(doc => {
+                    cars.push({ id: doc.id, ...doc.data() });
+                });
+                
+                displayCars();
+            } catch (error) {
+                console.error('Error loading cars:', error);
+            }
+        }
+
+        // Display Cars
+        function displayCars() {
             const grid = document.getElementById('carsGrid');
             const emptyState = document.getElementById('emptyState');
-            const carCount = document.getElementById('carCount');
-            
-            carCount.textContent = cars.length;
             
             if (cars.length === 0) {
                 grid.innerHTML = '';
@@ -404,712 +738,1208 @@
             emptyState.classList.add('hidden');
             
             grid.innerHTML = cars.map(car => `
-                <div class="bg-white rounded-xl shadow-lg hover:shadow-xl transition car-card" data-plate="${car.plateNumber}" data-owner="${car.ownerName}">
-                    ${car.image ? `
-                        <img src="${car.image}" alt="${car.plateNumber}" class="w-full h-48 object-cover rounded-t-xl cursor-pointer" onclick="viewImage('${car.image}')">
-                    ` : `
-                        <div class="w-full h-48 bg-gray-200 rounded-t-xl flex items-center justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400">
-                                <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/>
-                                <circle cx="7" cy="17" r="2"/>
-                                <path d="M9 17h6"/>
-                                <circle cx="17" cy="17" r="2"/>
-                            </svg>
-                        </div>
-                    `}
-                    <div class="p-6">
-                        <div class="flex justify-between items-start mb-4">
-                            <div>
-                                <h3 class="text-xl font-bold text-gray-800">${car.plateNumber}</h3>
-                                <p class="text-gray-600">${car.ownerName}</p>
-                            </div>
-                            <div class="flex gap-2">
-                                <button onclick="editCar(${car.id})" class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-                                    </svg>
-                                </button>
-                                <button onclick="deleteCar(${car.id})" class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <polyline points="3 6 5 6 21 6"></polyline>
-                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                    </svg>
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="space-y-2 mb-4">
-                            <div class="flex justify-between text-sm">
-                                <span class="text-gray-600">טלפון:</span>
-                                <span class="font-semibold">${car.phone || '-'}</span>
-                            </div>
-                            <div class="flex justify-between text-sm">
-                                <span class="text-gray-600">סוג:</span>
-                                <span class="font-semibold">${car.carType || '-'}</span>
-                            </div>
-                            <div class="flex justify-between text-sm">
-                                <span class="text-gray-600">דגם:</span>
-                                <span class="font-semibold">${car.model || '-'}</span>
-                            </div>
-                            <div class="flex justify-between text-sm">
-                                <span class="text-gray-600">שנה:</span>
-                                <span class="font-semibold">${car.year || '-'}</span>
-                            </div>
-                            ${car.engineType ? `
-                                <div class="flex justify-between text-sm">
-                                    <span class="text-gray-600">מנוע:</span>
-                                    <span class="font-semibold">${car.engineType}</span>
-                                </div>
-                            ` : ''}
-                            ${car.enginePower ? `
-                                <div class="flex justify-between text-sm">
-                                    <span class="text-gray-600">הספק:</span>
-                                    <span class="font-semibold">${car.enginePower}</span>
-                                </div>
-                            ` : ''}
-                        </div>
-
-                        <div class="border-t pt-4">
-                            <div class="flex justify-between items-center mb-3">
-                                <span class="text-sm text-gray-600">טיפולים:</span>
-                                <span class="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-sm font-bold">
-                                    ${car.maintenanceHistory?.length || 0}
-                                </span>
-                            </div>
-                            <button onclick="showCarDetails(${car.id})" class="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white py-2 rounded-lg hover:from-blue-700 hover:to-blue-800 transition">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                                    <polyline points="14 2 14 8 20 8"></polyline>
-                                    <line x1="16" y1="13" x2="8" y2="13"></line>
-                                    <line x1="16" y1="17" x2="8" y2="17"></line>
-                                    <polyline points="10 9 9 9 8 9"></polyline>
-                                </svg>
-                                הצג פרטים
-                            </button>
-                        </div>
+                <div class="bg-white rounded-lg shadow p-4 car-card" data-search="${car.plateNumber} ${car.ownerName || ''}">
+                    ${car.imageUrl ? 
+                        `<img src="${car.imageUrl}" class="w-full h-40 object-cover rounded mb-3 cursor-pointer" onclick="viewCarDetails('${car.id}')">` : 
+                        `<div class="w-full h-40 bg-gray-200 rounded mb-3 flex items-center justify-center text-gray-400 cursor-pointer" onclick="viewCarDetails('${car.id}')">אין תמונה</div>`
+                    }
+                    <h3 class="font-bold text-lg cursor-pointer hover:text-blue-600" onclick="viewCarDetails('${car.id}')">${car.plateNumber}</h3>
+                    ${car.ownerName ? `<p class="text-gray-600">${car.ownerName}</p>` : ''}
+                    ${car.phone ? `<p class="text-sm">📞 ${car.phone}</p>` : ''}
+                    ${car.carType ? `<p class="text-sm">🚗 ${car.carType}</p>` : ''}
+                    ${car.model ? `<p class="text-sm">📋 ${car.model}</p>` : ''}
+                    ${car.year ? `<p class="text-sm">📅 ${car.year}</p>` : ''}
+                    
+                    <div class="mt-3 flex gap-2 flex-wrap">
+                        <button onclick="viewCarDetails('${car.id}')" class="text-green-600 hover:underline text-sm">📋 פרטים</button>
+                        <button onclick="editCar('${car.id}')" class="text-blue-600 hover:underline text-sm">עריכה</button>
+                        <button onclick="deleteCar('${car.id}')" class="text-red-600 hover:underline text-sm">מחיקה</button>
                     </div>
                 </div>
             `).join('');
         }
 
-        // Filter cars
-        function filterCars() {
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            const selectedType = document.getElementById('carTypeFilter').value;
-            const cards = document.querySelectorAll('.car-card');
+        // View Car Details
+        async function viewCarDetails(carId) {
+            currentCarId = carId;
+            const car = cars.find(c => c.id === carId);
+            if (!car) return;
             
-            let visibleCount = 0;
+            // Display car details
+            document.getElementById('detailsPlateNumber').textContent = car.plateNumber;
             
-            cards.forEach(card => {
-                const plate = card.dataset.plate.toLowerCase();
-                const owner = card.dataset.owner.toLowerCase();
-                const carType = card.dataset.cartype || '';
-                
-                const matchesSearch = plate.includes(searchTerm) || owner.includes(searchTerm);
-                const matchesType = !selectedType || carType === selectedType;
-                
-                if (matchesSearch && matchesType) {
-                    card.style.display = 'block';
-                    visibleCount++;
-                } else {
-                    card.style.display = 'none';
-                }
-            });
+            // WhatsApp and Call buttons
+            const phoneButtons = car.phone ? `
+                <div class="mb-6 flex flex-wrap gap-2">
+                    <a href="tel:${car.phone}" class="flex-1 min-w-[200px] bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 text-center font-bold">
+                        📞 התקשר ל${car.ownerName || 'בעלים'}
+                    </a>
+                    <a href="https://wa.me/972${car.phone.replace(/^0/, '')}?text=${encodeURIComponent('שלום ' + (car.ownerName || '') + ', רכבך ' + car.plateNumber + ' נכנס לטיפול במוסך. נעדכן אותך בהמשך.')}" 
+                       target="_blank" 
+                       class="flex-1 min-w-[200px] bg-blue-500 text-white px-4 py-3 rounded-lg hover:bg-blue-600 text-center font-bold">
+                        💬 נכנס לטיפול
+                    </a>
+                    <a href="https://wa.me/972${car.phone.replace(/^0/, '')}?text=${encodeURIComponent('שלום ' + (car.ownerName || '') + ', רכבך ' + car.plateNumber + ' מוכן ומחכה לאיסוף. ניתן לבוא לקחת את הרכב.')}" 
+                       target="_blank" 
+                       class="flex-1 min-w-[200px] bg-green-500 text-white px-4 py-3 rounded-lg hover:bg-green-600 text-center font-bold">
+                        ✅ מוכן לאיסוף
+                    </a>
+                    <a href="https://wa.me/972${car.phone.replace(/^0/, '')}?text=${encodeURIComponent('שלום ' + (car.ownerName || '') + ', רכבך ' + car.plateNumber + ' נמסר בהצלחה. תודה שבחרת בשירותינו!')}" 
+                       target="_blank" 
+                       class="flex-1 min-w-[200px] bg-purple-500 text-white px-4 py-3 rounded-lg hover:bg-purple-600 text-center font-bold">
+                        🎉 נמסר בהצלחה
+                    </a>
+                </div>
+            ` : '<div class="mb-6 p-4 bg-yellow-100 border border-yellow-400 text-yellow-800 rounded">אין מספר טלפון - אנא הוסף מספר כדי להשתמש בתכונות התקשורת</div>';
             
-            document.getElementById('carCount').textContent = visibleCount;
+            document.getElementById('carDetailsContent').innerHTML = `
+                ${phoneButtons}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    ${car.imageUrl ? `
+                        <div class="col-span-2">
+                            <img src="${car.imageUrl}" class="w-full max-h-64 object-contain rounded">
+                        </div>
+                    ` : ''}
+                    ${car.ownerName ? `<div><span class="font-bold">שם הבעלים:</span> ${car.ownerName}</div>` : ''}
+                    ${car.phone ? `<div><span class="font-bold">טלפון:</span> ${car.phone}</div>` : ''}
+                    ${car.carType ? `<div><span class="font-bold">סוג רכב:</span> ${car.carType}</div>` : ''}
+                    ${car.model ? `<div><span class="font-bold">דגם:</span> ${car.model}</div>` : ''}
+                    ${car.year ? `<div><span class="font-bold">שנת ייצור:</span> ${car.year}</div>` : ''}
+                    ${car.vinCode ? `<div><span class="font-bold">קוד רכב (VIN):</span> ${car.vinCode}</div>` : ''}
+                    ${car.immobilizerCode ? `<div class="bg-yellow-50 border border-yellow-300 p-2 rounded"><span class="font-bold">🔑 קוד התנעה:</span> <span class="font-mono">${car.immobilizerCode}</span></div>` : ''}
+                    ${car.engineType ? `<div><span class="font-bold">סוג מנוע:</span> ${car.engineType}</div>` : ''}
+                    ${car.enginePower ? `<div class="col-span-2"><span class="font-bold">הספק מנוע:</span> ${car.enginePower}</div>` : ''}
+                </div>
+            `;
+            
+            // Load maintenance history
+            await loadMaintenanceHistory(carId);
+            
+            document.getElementById('carDetailsModal').classList.remove('hidden');
         }
 
-        // Show add car form
-        function showAddCarForm() {
+        // Load Maintenance History
+        async function loadMaintenanceHistory(carId) {
+            try {
+                const snapshot = await db.collection('maintenance')
+                    .where('carId', '==', carId)
+                    .get();
+                
+                const maintenanceList = [];
+                snapshot.forEach(doc => {
+                    maintenanceList.push({ id: doc.id, ...doc.data() });
+                });
+                
+                // Sort by createdAt in JavaScript (no Firestore index needed)
+                maintenanceList.sort((a, b) => {
+                    const dateA = a.createdAt?.toMillis() || 0;
+                    const dateB = b.createdAt?.toMillis() || 0;
+                    return dateB - dateA; // Newest first
+                });
+                
+                const historyDiv = document.getElementById('maintenanceHistory');
+                
+                if (maintenanceList.length === 0) {
+                    historyDiv.innerHTML = '<p class="text-gray-500 text-center py-4">אין טיפולים עדיין</p>';
+                    return;
+                }
+                
+                historyDiv.innerHTML = maintenanceList.map(m => {
+                    return `
+                        <div class="border rounded-lg p-4 bg-gray-50">
+                            <div class="flex justify-between items-start mb-3">
+                                <div class="flex-1">
+                                    ${m.date ? `<div class="font-bold text-lg mb-1">📅 ${new Date(m.date).toLocaleDateString('he-IL')}</div>` : ''}
+                                    ${m.kilometers ? `<div class="text-sm text-gray-600">🚗 ${m.kilometers} ק״מ</div>` : ''}
+                                </div>
+                                <div class="flex gap-2">
+                                    <button onclick="printMaintenance('${m.id}')" class="text-purple-600 hover:underline text-sm">🖨️ הדפס</button>
+                                    <button onclick="editMaintenance('${m.id}')" class="text-blue-600 hover:underline text-sm">עריכה</button>
+                                    <button onclick="deleteMaintenance('${m.id}')" class="text-red-600 hover:underline text-sm">מחיקה</button>
+                                </div>
+                            </div>
+                            
+                            ${m.partName ? `<p class="mb-2"><strong>🔧 חלק:</strong> ${m.partName}</p>` : ''}
+                            ${m.workDescription ? `<p class="mb-2"><strong>תיאור:</strong> ${m.workDescription}</p>` : ''}
+                            
+                            ${m.totalCost > 0 ? `
+                                <div class="text-lg font-bold text-green-700 mb-2">
+                                    💰 ${m.totalCost.toFixed(2)} ₪
+                                </div>
+                            ` : ''}
+                            
+                            ${m.images && m.images.length > 0 ? `
+                                <div class="grid grid-cols-3 gap-2 mt-2">
+                                    ${m.images.map(img => `<img src="${img}" class="w-full h-24 object-cover rounded cursor-pointer" onclick="window.open('${img}')">`).join('')}
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                }).join('');
+                
+            } catch (error) {
+                console.error('Error loading maintenance:', error);
+            }
+        }
+
+        // Close Car Details Modal
+        function closeCarDetailsModal() {
+            document.getElementById('carDetailsModal').classList.add('hidden');
+            currentCarId = null;
+        }
+
+        // Open Car Modal
+        function openCarModal() {
             editingCarId = null;
-            tempCarImage = null;
-            document.getElementById('carModalTitle').textContent = 'הוספת רכב חדש';
-            document.getElementById('plateNumber').value = '';
-            document.getElementById('ownerName').value = '';
-            document.getElementById('phone').value = '';
-            document.getElementById('carType').value = '';
-            document.getElementById('model').value = '';
-            document.getElementById('year').value = '';
-            document.getElementById('carCode').value = '';
-            document.getElementById('engineType').value = '';
-            document.getElementById('enginePower').value = '';
-            displayCarImagePreview();
+            document.getElementById('modalTitle').textContent = 'הוסף רכב';
+            document.getElementById('carForm').reset();
+            document.getElementById('imagePreview').innerHTML = '';
             document.getElementById('carModal').classList.remove('hidden');
         }
 
-        // Edit car
+        // Close Car Modal
+        function closeCarModal() {
+            document.getElementById('carModal').classList.add('hidden');
+            editingCarId = null;
+        }
+
+        // Edit Car
         function editCar(carId) {
             const car = cars.find(c => c.id === carId);
             if (!car) return;
             
             editingCarId = carId;
-            tempCarImage = car.image || null;
-            document.getElementById('carModalTitle').textContent = 'עריכת רכב';
-            document.getElementById('plateNumber').value = car.plateNumber;
-            document.getElementById('ownerName').value = car.ownerName;
+            document.getElementById('modalTitle').textContent = 'ערוך רכב';
+            document.getElementById('plateNumber').value = car.plateNumber || '';
+            document.getElementById('ownerName').value = car.ownerName || '';
             document.getElementById('phone').value = car.phone || '';
             document.getElementById('carType').value = car.carType || '';
             document.getElementById('model').value = car.model || '';
             document.getElementById('year').value = car.year || '';
-            document.getElementById('carCode').value = car.carCode || '';
+            document.getElementById('vinCode').value = car.vinCode || '';
+            document.getElementById('immobilizerCode').value = car.immobilizerCode || '';
             document.getElementById('engineType').value = car.engineType || '';
             document.getElementById('enginePower').value = car.enginePower || '';
-            displayCarImagePreview();
+            
+            if (car.imageUrl) {
+                document.getElementById('imagePreview').innerHTML = 
+                    `<img src="${car.imageUrl}" class="w-32 h-32 object-cover rounded">`;
+            }
+            
             document.getElementById('carModal').classList.remove('hidden');
         }
 
-        // Save car
-        function saveCar() {
-            const plateNumber = document.getElementById('plateNumber').value.trim();
-            const ownerName = document.getElementById('ownerName').value.trim();
+        // Car Form Submit
+        document.getElementById('carForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
             
-            if (!plateNumber || !ownerName) {
-                alert('נא להזין מספר רישוי ושם הבעלים');
-                return;
-            }
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.textContent;
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'שומר...';
             
-            const carData = {
-                plateNumber,
-                ownerName,
-                phone: document.getElementById('phone').value.trim(),
-                carType: document.getElementById('carType').value.trim(),
-                model: document.getElementById('model').value.trim(),
-                year: document.getElementById('year').value.trim(),
-                carCode: document.getElementById('carCode').value.trim(),
-                engineType: document.getElementById('engineType').value.trim(),
-                enginePower: document.getElementById('enginePower').value.trim(),
-                image: tempCarImage
-            };
-            
-            if (editingCarId) {
-                const index = cars.findIndex(c => c.id === editingCarId);
-                cars[index] = { ...cars[index], ...carData };
-            } else {
-                cars.push({
-                    id: Date.now(),
-                    ...carData,
-                    maintenanceHistory: []
-                });
-            }
-            
-            saveData();
-            renderCars();
-            updateCarTypeFilter();
-            closeCarModal();
-        }
-
-        // Close car modal
-        function closeCarModal() {
-            document.getElementById('carModal').classList.add('hidden');
-            editingCarId = null;
-            tempCarImage = null;
-        }
-
-        // Delete car
-        function deleteCar(carId) {
-            if (!confirm('האם אתה בטוח שברצונך למחוק רכב זה?')) return;
-            
-            cars = cars.filter(c => c.id !== carId);
-            saveData();
-            updateCarTypeFilter();
-            renderCars();
-        }
-
-        // Show car details
-        function showCarDetails(carId) {
-            const car = cars.find(c => c.id === carId);
-            if (!car) return;
-            
-            selectedCarId = carId;
-            document.getElementById('detailsPlate').textContent = car.plateNumber;
-            document.getElementById('detailsOwner').textContent = car.ownerName;
-            
-            const carImageDiv = document.getElementById('detailsCarImage');
-            if (car.image) {
-                carImageDiv.innerHTML = `
-                    <img src="${car.image}" alt="${car.plateNumber}" class="w-full h-64 object-cover rounded-xl cursor-pointer" onclick="viewImage('${car.image}')">
-                `;
-            } else {
-                carImageDiv.innerHTML = '';
-            }
-            
-            document.getElementById('detailsInfo').innerHTML = `
-                <div style="grid-column: span 3;">
-                    <p class="text-gray-600 text-sm mb-2">שלח הודעת וואטסאפ מהירה</p>
-                    <div class="flex gap-2 flex-wrap">
-                        ${car.phone ? `
-                            <a href="https://wa.me/${car.phone.replace(/\D/g, '')}?text=${encodeURIComponent('שלום ' + car.ownerName + ', רכבך ' + car.plateNumber + ' נכנס לטיפול במוסך. נעדכן אותך בהמשך.')}" target="_blank" class="flex items-center gap-1 bg-blue-500 text-white px-3 py-2 rounded-lg hover:bg-blue-600 transition text-sm">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
-                                </svg>
-                                נכנס לטיפול
-                            </a>
-                            <a href="https://wa.me/${car.phone.replace(/\D/g, '')}?text=${encodeURIComponent('שלום ' + car.ownerName + ', רכבך ' + car.plateNumber + ' מוכן ומחכה לאיסוף. ניתן לבוא לקחת את הרכב.')}" target="_blank" class="flex items-center gap-1 bg-green-500 text-white px-3 py-2 rounded-lg hover:bg-green-600 transition text-sm">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
-                                </svg>
-                                מוכן לאיסוף
-                            </a>
-                            <a href="https://wa.me/${car.phone.replace(/\D/g, '')}?text=${encodeURIComponent('שלום ' + car.ownerName + ', רכבך ' + car.plateNumber + ' נמסר בהצלחה. תודה שבחרת בשירותינו!')}" target="_blank" class="flex items-center gap-1 bg-purple-500 text-white px-3 py-2 rounded-lg hover:bg-purple-600 transition text-sm">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
-                                </svg>
-                                נמסר
-                            </a>
-                        ` : '<span class="text-gray-500 text-sm">אין מספר טלפון</span>'}
-                    </div>
-                </div>
-                <div>
-                    <p class="text-gray-600 text-sm">טלפון</p>
-                    <p class="font-semibold">${car.phone || '-'}</p>
-                </div>
-                <div>
-                    <p class="text-gray-600 text-sm">סוג רכב</p>
-                    <p class="font-semibold">${car.carType || '-'}</p>
-                </div>
-                <div>
-                    <p class="text-gray-600 text-sm">דגם</p>
-                    <p class="font-semibold">${car.model || '-'}</p>
-                </div>
-                <div>
-                    <p class="text-gray-600 text-sm">שנה</p>
-                    <p class="font-semibold">${car.year || '-'}</p>
-                </div>
-                ${car.carCode ? `
-                    <div>
-                        <p class="text-gray-600 text-sm">קוד רכב (VIN)</p>
-                        <p class="font-semibold text-xs">${car.carCode}</p>
-                    </div>
-                ` : ''}
-                ${car.engineType ? `
-                    <div>
-                        <p class="text-gray-600 text-sm">סוג מנוע</p>
-                        <p class="font-semibold">${car.engineType}</p>
-                    </div>
-                ` : ''}
-                ${car.enginePower ? `
-                    <div>
-                        <p class="text-gray-600 text-sm">הספק מנוע</p>
-                        <p class="font-semibold">${car.enginePower}</p>
-                    </div>
-                ` : ''}
-            `;
-            
-            renderMaintenanceList(car);
-            document.getElementById('detailsModal').classList.remove('hidden');
-        }
-
-        // Render maintenance list
-        function renderMaintenanceList(car) {
-            const list = document.getElementById('maintenanceList');
-            
-            if (!car.maintenanceHistory || car.maintenanceHistory.length === 0) {
-                list.innerHTML = `
-                    <div class="text-center py-12 bg-gray-50 rounded-xl">
-                        <svg class="mx-auto text-gray-400 mb-4" xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
-                        </svg>
-                        <p class="text-gray-600">אין טיפולים רשומים עדיין</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            const sorted = [...car.maintenanceHistory].sort((a, b) => new Date(b.date) - new Date(a.date));
-            
-            list.innerHTML = sorted.map(m => `
-                <div class="border-2 border-gray-200 rounded-xl p-6 hover:border-blue-300 transition mb-4">
-                    <div class="flex justify-between items-start mb-3">
-                        <div class="flex items-center gap-3">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600">
-                                <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
-                            </svg>
-                            <div>
-                                <h4 class="text-xl font-bold text-gray-800">${m.partName}</h4>
-                                <p class="text-gray-600 text-sm">${new Date(m.date).toLocaleDateString('he-IL')}</p>
-                                ${m.kilometers ? `<p class="text-blue-600 text-sm font-semibold">📍 ${Number(m.kilometers).toLocaleString()} ק"מ</p>` : ''}
-                            </div>
-                        </div>
-                        <div class="text-left flex items-start gap-2">
-                            <div>
-                                <p class="text-2xl font-bold text-green-600">${m.cost} ₪</p>
-                            </div>
-                            <div class="flex gap-1">
-                                <button onclick="printMaintenance(${m.id})" class="p-1.5 text-purple-600 hover:bg-purple-50 rounded-lg transition" title="הדפס טיפול">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <polyline points="6 9 6 2 18 2 18 9"></polyline>
-                                        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-                                        <rect x="6" y="14" width="12" height="8"></rect>
-                                    </svg>
-                                </button>
-                                <button onclick="editMaintenance(${m.id})" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition" title="ערוך טיפול">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-                                    </svg>
-                                </button>
-                                <button onclick="deleteMaintenance(${m.id})" class="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition" title="מחק טיפול">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <polyline points="3 6 5 6 21 6"></polyline>
-                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                    </svg>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    ${m.description ? `<p class="text-gray-700 bg-gray-50 p-3 rounded-lg mb-3">${m.description}</p>` : ''}
-                    ${m.images && m.images.length > 0 ? `
-                        <div class="mt-4">
-                            <p class="text-sm font-semibold text-gray-700 mb-2">תמונות התקלה:</p>
-                            <div class="grid grid-cols-4 gap-2">
-                                ${m.images.map(img => `
-                                    <img src="${img}" alt="Maintenance" class="w-full h-20 object-cover rounded-lg cursor-pointer hover:opacity-80 transition" onclick="viewImage('${img}')">
-                                `).join('')}
-                            </div>
-                        </div>
-                    ` : ''}
-                </div>
-            `).join('');
-        }
-
-        // Close details modal
-        function closeDetailsModal() {
-            document.getElementById('detailsModal').classList.add('hidden');
-            selectedCarId = null;
-        }
-
-        // Show maintenance form
-        function showMaintenanceForm() {
-            editingMaintenanceId = null;
-            tempMaintenanceImages = [];
-            document.getElementById('maintenanceModalTitle').textContent = 'הוספת טיפול';
-            document.getElementById('saveMaintenanceBtn').textContent = 'הוסף טיפול';
-            document.getElementById('maintenanceDate').value = new Date().toISOString().split('T')[0];
-            document.getElementById('kilometers').value = '';
-            document.getElementById('partName').value = '';
-            document.getElementById('description').value = '';
-            document.getElementById('cost').value = '';
-            displayMaintenanceImagesPreview();
-            document.getElementById('maintenanceModal').classList.remove('hidden');
-        }
-
-        // Edit maintenance
-        function editMaintenance(maintenanceId) {
-            const car = cars.find(c => c.id === selectedCarId);
-            const maintenance = car.maintenanceHistory.find(m => m.id === maintenanceId);
-            if (!maintenance) return;
-            
-            editingMaintenanceId = maintenanceId;
-            tempMaintenanceImages = maintenance.images ? [...maintenance.images] : [];
-            
-            document.getElementById('maintenanceModalTitle').textContent = 'עריכת טיפול';
-            document.getElementById('saveMaintenanceBtn').textContent = 'עדכן טיפול';
-            document.getElementById('maintenanceDate').value = maintenance.date;
-            document.getElementById('kilometers').value = maintenance.kilometers || '';
-            document.getElementById('partName').value = maintenance.partName;
-            document.getElementById('description').value = maintenance.description || '';
-            document.getElementById('cost').value = maintenance.cost;
-            displayMaintenanceImagesPreview();
-            document.getElementById('maintenanceModal').classList.remove('hidden');
-        }
-
-        // Delete maintenance
-        function deleteMaintenance(maintenanceId) {
-            if (!confirm('האם אתה בטוח שברצונך למחוק טיפול זה?')) return;
-            
-            const carIndex = cars.findIndex(c => c.id === selectedCarId);
-            cars[carIndex].maintenanceHistory = cars[carIndex].maintenanceHistory.filter(m => m.id !== maintenanceId);
-            
-            saveData();
-            renderMaintenanceList(cars[carIndex]);
-            renderCars();
-        }
-
-        // Print maintenance
-        function printMaintenance(maintenanceId) {
-            const car = cars.find(c => c.id === selectedCarId);
-            const maintenance = car.maintenanceHistory.find(m => m.id === maintenanceId);
-            if (!maintenance) return;
-            
-            const printWindow = window.open('', '_blank');
-            
-            printWindow.document.write(`
-                <!DOCTYPE html>
-                <html dir="rtl" lang="he">
-                <head>
-                    <meta charset="UTF-8">
-                    <title>דוח טיפול - ${car.plateNumber}</title>
-                    <style>
-                        * {
-                            margin: 0;
-                            padding: 0;
-                            box-sizing: border-box;
-                            font-family: Arial, sans-serif;
-                        }
-                        @page {
-                            size: A4;
-                            margin: 20mm;
-                        }
-                        body {
-                            padding: 30px;
-                            background: white;
-                            max-width: 210mm;
-                            margin: 0 auto;
-                        }
-                        .header {
-                            text-align: center;
-                            border-bottom: 3px solid #2563eb;
-                            padding-bottom: 15px;
-                            margin-bottom: 25px;
-                        }
-                        .header h1 {
-                            color: #2563eb;
-                            font-size: 28px;
-                            margin-bottom: 8px;
-                        }
-                        .header p {
-                            color: #6b7280;
-                            font-size: 14px;
-                        }
-                        .section {
-                            margin-bottom: 20px;
-                            background: #f9fafb;
-                            padding: 15px;
-                            border-radius: 8px;
-                            border-right: 4px solid #2563eb;
-                        }
-                        .section-title {
-                            font-size: 18px;
-                            font-weight: bold;
-                            color: #1f2937;
-                            margin-bottom: 12px;
-                        }
-                        .info-grid {
-                            display: grid;
-                            grid-template-columns: repeat(2, 1fr);
-                            gap: 12px;
-                        }
-                        .info-item {
-                            display: flex;
-                            flex-direction: column;
-                        }
-                        .info-label {
-                            font-size: 13px;
-                            color: #6b7280;
-                            margin-bottom: 4px;
-                        }
-                        .info-value {
-                            font-size: 16px;
-                            font-weight: bold;
-                            color: #1f2937;
-                        }
-                        .description {
-                            background: white;
-                            padding: 12px;
-                            border-radius: 8px;
-                            color: #374151;
-                            line-height: 1.5;
-                            font-size: 14px;
-                        }
-                        .cost-box {
-                            background: #10b981;
-                            color: white;
-                            padding: 18px;
-                            border-radius: 8px;
-                            text-align: center;
-                            margin-top: 20px;
-                        }
-                        .cost-box .label {
-                            font-size: 15px;
-                            margin-bottom: 8px;
-                        }
-                        .cost-box .value {
-                            font-size: 32px;
-                            font-weight: bold;
-                        }
-                        .footer {
-                            margin-top: 30px;
-                            text-align: center;
-                            color: #9ca3af;
-                            font-size: 12px;
-                            border-top: 2px solid #e5e7eb;
-                            padding-top: 15px;
-                        }
-                        @media print {
-                            body {
-                                padding: 15px;
-                            }
-                            .header h1 {
-                                font-size: 24px;
-                            }
-                            .section {
-                                page-break-inside: avoid;
-                            }
-                        }
-                    </style>
-                </head>
-                <body>
-                    <div class="header">
-                        <h1>🔧 דוח טיפול</h1>
-                        <p>מערכת ניהול מוסך</p>
-                    </div>
-
-                    <div class="section">
-                        <div class="section-title">פרטי רכב</div>
-                        <div class="info-grid">
-                            <div class="info-item">
-                                <span class="info-label">מספר רישוי</span>
-                                <span class="info-value">${car.plateNumber}</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">שם הבעלים</span>
-                                <span class="info-value">${car.ownerName}</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">טלפון</span>
-                                <span class="info-value">${car.phone || '-'}</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">סוג רכב</span>
-                                <span class="info-value">${car.carType || '-'} ${car.model || ''}</span>
-                            </div>
-                            ${car.carCode ? `
-                                <div class="info-item" style="grid-column: span 2;">
-                                    <span class="info-label">קוד רכב (VIN)</span>
-                                    <span class="info-value" style="font-size: 14px;">${car.carCode}</span>
-                                </div>
-                            ` : ''}
-                            ${car.engineType ? `
-                                <div class="info-item">
-                                    <span class="info-label">סוג מנוע</span>
-                                    <span class="info-value">${car.engineType}</span>
-                                </div>
-                            ` : ''}
-                            ${car.enginePower ? `
-                                <div class="info-item">
-                                    <span class="info-label">הספק מנוע</span>
-                                    <span class="info-value">${car.enginePower}</span>
-                                </div>
-                            ` : ''}
-                        </div>
-                    </div>
-
-                    <div class="section">
-                        <div class="section-title">פרטי טיפול</div>
-                        <div class="info-grid">
-                            <div class="info-item">
-                                <span class="info-label">תאריך</span>
-                                <span class="info-value">${new Date(maintenance.date).toLocaleDateString('he-IL')}</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">קילומטראז'</span>
-                                <span class="info-value">${maintenance.kilometers ? Number(maintenance.kilometers).toLocaleString() + ' ק"מ' : '-'}</span>
-                            </div>
-                            <div class="info-item" style="grid-column: span 2;">
-                                <span class="info-label">חלק שהוחלף</span>
-                                <span class="info-value">${maintenance.partName}</span>
-                            </div>
-                        </div>
-                        ${maintenance.description ? `
-                            <div style="margin-top: 15px;">
-                                <span class="info-label">תיאור העבודה</span>
-                                <div class="description">${maintenance.description}</div>
-                            </div>
-                        ` : ''}
-                    </div>
-
-                    <div class="cost-box">
-                        <div class="label">סך הכל לתשלום</div>
-                        <div class="value">${maintenance.cost} ₪</div>
-                    </div>
-
-                    <div class="footer">
-                        <p>תאריך הדפסה: ${new Date().toLocaleDateString('he-IL')} | מערכת ניהול מוסך</p>
-                    </div>
-                </body>
-                </html>
-            `);
-            
-            printWindow.document.close();
-            printWindow.focus();
-            
-            setTimeout(() => {
-                printWindow.print();
-            }, 250);
-        }
-
-        // Save maintenance
-        function saveMaintenance() {
-            const partName = document.getElementById('partName').value.trim();
-            const cost = document.getElementById('cost').value.trim();
-            const kilometers = document.getElementById('kilometers').value.trim();
-            
-            if (!partName || !cost || !kilometers) {
-                alert('נא להזין שם החלק, עלות וקילומטראז\'');
-                return;
-            }
-            
-            const maintenanceData = {
-                date: document.getElementById('maintenanceDate').value,
-                kilometers,
-                partName,
-                description: document.getElementById('description').value.trim(),
-                cost,
-                images: [...tempMaintenanceImages]
-            };
-            
-            const carIndex = cars.findIndex(c => c.id === selectedCarId);
-            if (!cars[carIndex].maintenanceHistory) {
-                cars[carIndex].maintenanceHistory = [];
-            }
-            
-            if (editingMaintenanceId) {
-                const maintenanceIndex = cars[carIndex].maintenanceHistory.findIndex(m => m.id === editingMaintenanceId);
-                cars[carIndex].maintenanceHistory[maintenanceIndex] = {
-                    ...cars[carIndex].maintenanceHistory[maintenanceIndex],
-                    ...maintenanceData
+            try {
+                const carData = {
+                    plateNumber: document.getElementById('plateNumber').value.trim(),
+                    ownerName: document.getElementById('ownerName').value.trim(),
+                    phone: document.getElementById('phone').value.trim(),
+                    carType: document.getElementById('carType').value.trim(),
+                    model: document.getElementById('model').value.trim(),
+                    year: document.getElementById('year').value.trim(),
+                    vinCode: document.getElementById('vinCode').value.trim(),
+                    immobilizerCode: document.getElementById('immobilizerCode').value.trim(),
+                    engineType: document.getElementById('engineType').value.trim(),
+                    enginePower: document.getElementById('enginePower').value.trim(),
+                    userId: currentUser.uid,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                 };
-            } else {
-                cars[carIndex].maintenanceHistory.push({
-                    id: Date.now(),
-                    ...maintenanceData
-                });
+                
+                const imageFile = document.getElementById('carImage').files[0];
+                if (imageFile) {
+                    try {
+                        submitBtn.textContent = 'דוחס תמונה...';
+                        const compressedImage = await compressImage(imageFile, 700);
+                        carData.imageUrl = compressedImage;
+                        submitBtn.textContent = 'שומר נתונים...';
+                    } catch (imageError) {
+                        console.error('Image compression error:', imageError);
+                        alert('שגיאה בעיבוד התמונה. אנא נסה שוב.');
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = originalText;
+                        return;
+                    }
+                } else if (editingCarId) {
+                    const existingCar = cars.find(c => c.id === editingCarId);
+                    if (existingCar && existingCar.imageUrl) {
+                        carData.imageUrl = existingCar.imageUrl;
+                    }
+                }
+                
+                if (editingCarId) {
+                    await db.collection('cars').doc(editingCarId).update(carData);
+                    alert('הרכב עודכן בהצלחה!');
+                } else {
+                    carData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                    await db.collection('cars').add(carData);
+                    alert('הרכב נוסף בהצלחה!');
+                }
+                
+                document.getElementById('carForm').reset();
+                document.getElementById('imagePreview').innerHTML = '';
+                closeCarModal();
+                await loadCars();
+                
+            } catch (error) {
+                console.error('Error saving car:', error);
+                alert('שגיאה: ' + (error.message || 'לא ניתן לשמור את הנתונים'));
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText;
             }
+        });
+
+        // Delete Car
+        async function deleteCar(carId) {
+            if (!confirm('האם למחוק את הרכב? גם כל הטיפולים יימחקו.')) return;
             
-            saveData();
-            renderMaintenanceList(cars[carIndex]);
-            renderCars();
-            closeMaintenanceModal();
+            try {
+                // Delete all maintenance records
+                const maintenanceSnapshot = await db.collection('maintenance')
+                    .where('carId', '==', carId)
+                    .get();
+                
+                const deletePromises = [];
+                maintenanceSnapshot.forEach(doc => {
+                    deletePromises.push(doc.ref.delete());
+                });
+                await Promise.all(deletePromises);
+                
+                // Delete car
+                await db.collection('cars').doc(carId).delete();
+                alert('הרכב נמחק בהצלחה');
+                await loadCars();
+            } catch (error) {
+                console.error('Error deleting car:', error);
+                alert('שגיאה במחיקת הרכב');
+            }
         }
 
-        // Close maintenance modal
+        // Open Maintenance Modal
+        function openMaintenanceModal() {
+            if (!currentCarId) {
+                alert('אנא בחר רכב תחילה');
+                return;
+            }
+            
+            editingMaintenanceId = null;
+            maintenanceImages = [];
+            document.getElementById('maintenanceForm').reset();
+            document.getElementById('maintenanceImagesPreview').innerHTML = '';
+            
+            // Set today's date as default
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('maintenanceDate').value = today;
+            
+            document.getElementById('maintenanceModal').classList.remove('hidden');
+        }
+
+        // Close Maintenance Modal
         function closeMaintenanceModal() {
             document.getElementById('maintenanceModal').classList.add('hidden');
             editingMaintenanceId = null;
-            tempMaintenanceImages = [];
+            maintenanceImages = [];
         }
 
-        // Export to Excel
-        function exportToExcel() {
-            let csvContent = "\uFEFFמספר רישוי,שם הבעלים,מספר טלפון,סוג רכב,דגם,שנת ייצור\n";
+        // Edit Maintenance
+        async function editMaintenance(maintenanceId) {
+            try {
+                const doc = await db.collection('maintenance').doc(maintenanceId).get();
+                if (!doc.exists) return;
+                
+                const m = doc.data();
+                editingMaintenanceId = maintenanceId;
+                
+                document.getElementById('workDescription').value = m.workDescription || '';
+                document.getElementById('parts').value = m.parts || '';
+                document.getElementById('totalCost').value = m.totalCost || '';
+                document.getElementById('notes').value = m.notes || '';
+                
+                maintenanceImages = m.images || [];
+                
+                if (maintenanceImages.length > 0) {
+                    document.getElementById('maintenanceImagesPreview').innerHTML = 
+                        maintenanceImages.map((img, i) => `
+                            <div class="relative">
+                                <img src="${img}" class="w-full h-24 object-cover rounded">
+                                <button type="button" onclick="removeMaintenanceImage(${i})" class="absolute top-0 right-0 bg-red-500 text-white rounded-full w-6 h-6 text-xs">×</button>
+                            </div>
+                        `).join('');
+                }
+                
+                document.getElementById('maintenanceModal').classList.remove('hidden');
+                
+            } catch (error) {
+                console.error('Error loading maintenance:', error);
+            }
+        }
+
+        // Delete Maintenance
+        async function deleteMaintenance(maintenanceId) {
+            if (!confirm('האם למחוק את הטיפול?')) return;
             
+            try {
+                await db.collection('maintenance').doc(maintenanceId).delete();
+                alert('הטיפול נמחק בהצלחה');
+                await loadMaintenanceHistory(currentCarId);
+            } catch (error) {
+                console.error('Error deleting maintenance:', error);
+                alert('שגיאה במחיקת הטיפול');
+            }
+        }
+
+        // Print Maintenance
+        async function printMaintenance(maintenanceId) {
+            try {
+                const doc = await db.collection('maintenance').doc(maintenanceId).get();
+                if (!doc.exists) return;
+                
+                const m = doc.data();
+                const car = cars.find(c => c.id === currentCarId);
+                
+                const printWindow = window.open('', '_blank');
+                printWindow.document.write(`
+                    <!DOCTYPE html>
+                    <html lang="he" dir="rtl">
+                    <head>
+                        <meta charset="UTF-8">
+                        <title>דוח טיפול - ${car.plateNumber}</title>
+                        <style>
+                            body {
+                                font-family: Arial, sans-serif;
+                                direction: rtl;
+                                padding: 20px;
+                                max-width: 800px;
+                                margin: 0 auto;
+                            }
+                            .header {
+                                text-align: center;
+                                border-bottom: 3px solid #333;
+                                padding-bottom: 20px;
+                                margin-bottom: 30px;
+                            }
+                            .header h1 {
+                                margin: 0;
+                                font-size: 32px;
+                            }
+                            .header p {
+                                margin: 5px 0;
+                                color: #666;
+                            }
+                            .section {
+                                margin-bottom: 20px;
+                            }
+                            .section-title {
+                                font-weight: bold;
+                                font-size: 18px;
+                                border-bottom: 2px solid #eee;
+                                padding-bottom: 5px;
+                                margin-bottom: 10px;
+                            }
+                            .info-row {
+                                margin: 10px 0;
+                                font-size: 16px;
+                            }
+                            .info-label {
+                                font-weight: bold;
+                                display: inline-block;
+                                width: 150px;
+                            }
+                            .cost {
+                                font-size: 28px;
+                                font-weight: bold;
+                                color: #22c55e;
+                                text-align: center;
+                                padding: 20px;
+                                border: 2px solid #22c55e;
+                                border-radius: 10px;
+                                margin: 20px 0;
+                            }
+                            .footer {
+                                margin-top: 50px;
+                                text-align: center;
+                                color: #666;
+                                font-size: 14px;
+                                border-top: 1px solid #eee;
+                                padding-top: 20px;
+                            }
+                            @media print {
+                                body {
+                                    padding: 0;
+                                }
+                                .no-print {
+                                    display: none;
+                                }
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="header">
+                            <h1>דוח טיפול</h1>
+                            <p>${new Date().toLocaleDateString('he-IL', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                        </div>
+                        
+                        <div class="section">
+                            <div class="section-title">פרטי רכב</div>
+                            <div class="info-row">
+                                <span class="info-label">מספר רישוי:</span>
+                                <span>${car.plateNumber}</span>
+                            </div>
+                            ${car.ownerName ? `
+                                <div class="info-row">
+                                    <span class="info-label">שם הבעלים:</span>
+                                    <span>${car.ownerName}</span>
+                                </div>
+                            ` : ''}
+                            ${car.phone ? `
+                                <div class="info-row">
+                                    <span class="info-label">טלפון:</span>
+                                    <span>${car.phone}</span>
+                                </div>
+                            ` : ''}
+                            ${car.carType ? `
+                                <div class="info-row">
+                                    <span class="info-label">סוג רכב:</span>
+                                    <span>${car.carType}</span>
+                                </div>
+                            ` : ''}
+                            ${car.model ? `
+                                <div class="info-row">
+                                    <span class="info-label">דגם:</span>
+                                    <span>${car.model}</span>
+                                </div>
+                            ` : ''}
+                        </div>
+                        
+                        ${m.workDescription ? `
+                            <div class="section">
+                                <div class="section-title">תיאור העבודה</div>
+                                <div class="info-row">${m.workDescription}</div>
+                            </div>
+                        ` : ''}
+                        
+                        ${m.parts ? `
+                            <div class="section">
+                                <div class="section-title">חלקי חילוף</div>
+                                <div class="info-row">${m.parts}</div>
+                            </div>
+                        ` : ''}
+                        
+                        ${m.notes ? `
+                            <div class="section">
+                                <div class="section-title">הערות</div>
+                                <div class="info-row">${m.notes}</div>
+                            </div>
+                        ` : ''}
+                        
+                        ${m.totalCost > 0 ? `
+                            <div class="cost">
+                                סה"כ לתשלום: ${m.totalCost.toFixed(2)} ₪
+                            </div>
+                        ` : ''}
+                        
+                        <div class="footer">
+                            <p>תודה שבחרת בשירותינו!</p>
+                            <p>דוח זה הופק בתאריך ${new Date().toLocaleDateString('he-IL')}</p>
+                        </div>
+                        
+                        <div class="no-print" style="text-align: center; margin-top: 30px;">
+                            <button onclick="window.print()" style="padding: 10px 30px; font-size: 16px; background: #3b82f6; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                                🖨️ הדפס
+                            </button>
+                            <button onclick="window.close()" style="padding: 10px 30px; font-size: 16px; background: #6b7280; color: white; border: none; border-radius: 5px; cursor: pointer; margin-right: 10px;">
+                                סגור
+                            </button>
+                        </div>
+                    </body>
+                    </html>
+                `);
+                printWindow.document.close();
+                
+            } catch (error) {
+                console.error('Error printing maintenance:', error);
+                alert('שגיאה בהדפסת הטיפול');
+            }
+        }
+
+        // Remove Maintenance Image
+        function removeMaintenanceImage(index) {
+            maintenanceImages.splice(index, 1);
+            document.getElementById('maintenanceImagesPreview').innerHTML = 
+                maintenanceImages.map((img, i) => `
+                    <div class="relative">
+                        <img src="${img}" class="w-full h-24 object-cover rounded">
+                        <button type="button" onclick="removeMaintenanceImage(${i})" class="absolute top-0 right-0 bg-red-500 text-white rounded-full w-6 h-6 text-xs">×</button>
+                    </div>
+                `).join('');
+        }
+
+        // Maintenance Form Submit
+        document.getElementById('maintenanceForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.textContent;
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'שומר...';
+            
+            try {
+                const maintenanceData = {
+                    carId: currentCarId,
+                    userId: currentUser.uid,
+                    date: document.getElementById('maintenanceDate').value,
+                    kilometers: document.getElementById('kilometers').value,
+                    partName: document.getElementById('partName').value,
+                    workDescription: document.getElementById('workDescription').value,
+                    totalCost: parseFloat(document.getElementById('totalCost').value) || 0,
+                    images: maintenanceImages,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                
+                // Handle new images
+                const imageFiles = document.getElementById('maintenanceImages').files;
+                if (imageFiles.length > 0) {
+                    submitBtn.textContent = 'דוחס תמונות...';
+                    
+                    for (let i = 0; i < Math.min(imageFiles.length, 5); i++) {
+                        try {
+                            const compressed = await compressImage(imageFiles[i], 500);
+                            maintenanceImages.push(compressed);
+                        } catch (err) {
+                            console.error('Image compression error:', err);
+                        }
+                    }
+                    
+                    maintenanceData.images = maintenanceImages;
+                }
+                
+                submitBtn.textContent = 'שומר נתונים...';
+                
+                if (editingMaintenanceId) {
+                    await db.collection('maintenance').doc(editingMaintenanceId).update(maintenanceData);
+                    alert('הטיפול עודכן בהצלחה!');
+                } else {
+                    maintenanceData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                    await db.collection('maintenance').add(maintenanceData);
+                    alert('הטיפול נוסף בהצלחה!');
+                }
+                
+                closeMaintenanceModal();
+                await loadMaintenanceHistory(currentCarId);
+                
+            } catch (error) {
+                console.error('Error saving maintenance:', error);
+                alert('שגיאה: ' + (error.message || 'לא ניתן לשמור את הנתונים'));
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText;
+            }
+        });
+
+        // Search Cars
+        function searchCars() {
+            const searchTerm = document.getElementById('searchBox').value.toLowerCase();
+            const cards = document.querySelectorAll('.car-card');
+            
+            cards.forEach(card => {
+                const text = card.dataset.search.toLowerCase();
+                card.style.display = text.includes(searchTerm) ? 'block' : 'none';
+            });
+        }
+
+        // Export CSV
+        function exportCSV() {
+            if (cars.length === 0) {
+                alert('אין נתונים לייצוא');
+                return;
+            }
+            
+            let csv = 'מספר רישוי,שם בעלים,טלפון,סוג,דגם,שנה\n';
             cars.forEach(car => {
-                csvContent += `${car.plateNumber},${car.ownerName},${car.phone || ''},${car.carType || ''},${car.model || ''},${car.year || ''}\n`;
+                csv += `${car.plateNumber},${car.ownerName || ''},${car.phone || ''},${car.carType || ''},${car.model || ''},${car.year || ''}\n`;
             });
             
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
-            const url = URL.createObjectURL(blob);
-            
-            link.setAttribute('href', url);
-            link.setAttribute('download', 'garage_data.csv');
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
+            link.href = URL.createObjectURL(blob);
+            link.download = `cars_${new Date().toISOString().split('T')[0]}.csv`;
             link.click();
-            document.body.removeChild(link);
         }
 
-        // Initialize
-        loadData();
+        // Sign Out
+        async function signOut() {
+            if (confirm('האם לצאת מהמערכת?')) {
+                await auth.signOut();
+            }
+        }
+
+        // Show Message
+        function showMessage(message, type) {
+            const errorDiv = document.getElementById('errorMsg');
+            const successDiv = document.getElementById('successMsg');
+            
+            if (type === 'error') {
+                errorDiv.textContent = message;
+                errorDiv.classList.remove('hidden');
+                successDiv.classList.add('hidden');
+            } else {
+                successDiv.textContent = message;
+                successDiv.classList.remove('hidden');
+                errorDiv.classList.add('hidden');
+            }
+            
+            setTimeout(() => {
+                errorDiv.classList.add('hidden');
+                successDiv.classList.add('hidden');
+            }, 5000);
+        }
+
+        // Image Preview
+        document.getElementById('carImage').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            const previewDiv = document.getElementById('imagePreview');
+            
+            if (file) {
+                if (!file.type.match(/image\/(jpeg|jpg|png|gif)/)) {
+                    alert('פורמט לא נתמך. השתמש ב-JPG או PNG');
+                    e.target.value = '';
+                    previewDiv.innerHTML = '';
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    const originalSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+                    const compressed = await compressImage(file, 700);
+                    const compressedSizeKB = (compressed.length / 1024 / 1.37).toFixed(0);
+                    
+                    previewDiv.innerHTML = `
+                        <img src="${compressed}" class="w-32 h-32 object-cover rounded mt-2 border">
+                        <p class="text-xs text-green-600 mt-1">✓ דחוס אוטומטית</p>
+                        <p class="text-xs text-gray-500">${originalSizeMB}MB → ${compressedSizeKB}KB</p>
+                    `;
+                };
+                reader.readAsDataURL(file);
+            } else {
+                previewDiv.innerHTML = '';
+            }
+        });
+
+        // Maintenance Images Preview
+        document.getElementById('maintenanceImages').addEventListener('change', async (e) => {
+            const files = e.target.files;
+            const previewDiv = document.getElementById('maintenanceImagesPreview');
+            
+            if (files.length > 0) {
+                const previews = [];
+                for (let i = 0; i < Math.min(files.length, 5); i++) {
+                    const file = files[i];
+                    if (file.type.match(/image\/(jpeg|jpg|png|gif)/)) {
+                        const reader = new FileReader();
+                        const preview = await new Promise((resolve) => {
+                            reader.onload = (e) => resolve(e.target.result);
+                            reader.readAsDataURL(file);
+                        });
+                        previews.push(preview);
+                    }
+                }
+                
+                previewDiv.innerHTML = previews.map((img, i) => `
+                    <img src="${img}" class="w-full h-24 object-cover rounded">
+                `).join('');
+            }
+        });
+
+        // ==========================================
+        // APPOINTMENTS SYSTEM
+        // ==========================================
+
+        // Load Appointments from Firebase
+        async function loadAppointments() {
+            if (!currentUser) return;
+            
+            try {
+                const snapshot = await db.collection('appointments')
+                    .where('userId', '==', currentUser.uid)
+                    .get();
+                
+                appointments = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                
+                // Sort by date locally
+                appointments.sort((a, b) => {
+                    const dateA = new Date(a.date + ' ' + a.time);
+                    const dateB = new Date(b.date + ' ' + b.time);
+                    return dateA - dateB;
+                });
+                
+                console.log('Loaded appointments:', appointments.length);
+            } catch (error) {
+                console.error('Error loading appointments:', error);
+                alert('שגיאה בטעינת פגישות: ' + error.message);
+            }
+        }
+
+        // Open Calendar Modal
+        async function openCalendarModal() {
+            document.getElementById('calendarModal').classList.remove('hidden');
+            await loadAppointments(); // Reload appointments
+            renderCalendar();
+        }
+
+        // Close Calendar Modal
+        function closeCalendarModal() {
+            document.getElementById('calendarModal').classList.add('hidden');
+        }
+
+        // Open Appointment Modal
+        function openAppointmentModal() {
+            editingAppointmentId = null;
+            document.getElementById('appointmentForm').reset();
+            
+            // Populate car dropdown
+            const carSelect = document.getElementById('appointmentCar');
+            carSelect.innerHTML = '<option value="">בחר רכב...</option>';
+            
+            cars.forEach(car => {
+                const option = document.createElement('option');
+                option.value = car.id;
+                option.textContent = `${car.plateNumber} - ${car.ownerName}`;
+                if (currentCarId && car.id === currentCarId) {
+                    option.selected = true;
+                }
+                carSelect.appendChild(option);
+            });
+            
+            // Set default date to today
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('appointmentDate').value = today;
+            miniSelectedDate = today;
+            
+            // Reset mini calendar to current month
+            miniMonth = new Date().getMonth();
+            miniYear = new Date().getFullYear();
+            
+            document.getElementById('appointmentModal').classList.remove('hidden');
+            renderMiniCalendar();
+        }
+
+        // Close Appointment Modal
+        function closeAppointmentModal() {
+            document.getElementById('appointmentModal').classList.add('hidden');
+            editingAppointmentId = null;
+        }
+
+        // Previous Month for Mini Calendar
+        function previousMonthMini() {
+            miniMonth--;
+            if (miniMonth < 0) {
+                miniMonth = 11;
+                miniYear--;
+            }
+            renderMiniCalendar();
+        }
+
+        // Next Month for Mini Calendar
+        function nextMonthMini() {
+            miniMonth++;
+            if (miniMonth > 11) {
+                miniMonth = 0;
+                miniYear++;
+            }
+            renderMiniCalendar();
+        }
+
+        // Render Mini Calendar
+        function renderMiniCalendar() {
+            const monthNames = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
+            document.getElementById('miniMonthYear').textContent = `${monthNames[miniMonth]} ${miniYear}`;
+            
+            const firstDay = new Date(miniYear, miniMonth, 1).getDay();
+            const daysInMonth = new Date(miniYear, miniMonth + 1, 0).getDate();
+            
+            const calendarGrid = document.getElementById('miniCalendarGrid');
+            calendarGrid.innerHTML = '';
+            
+            // Add empty cells for days before month starts
+            for (let i = 0; i < firstDay; i++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.className = 'p-1';
+                calendarGrid.appendChild(emptyCell);
+            }
+            
+            // Add days of month
+            const today = new Date();
+            const todayStr = today.toISOString().split('T')[0];
+            
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = `${miniYear}-${String(miniMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const dayAppointments = appointments.filter(apt => apt.date === dateStr);
+                
+                const dayCell = document.createElement('div');
+                
+                // Build class name
+                let className = 'p-1 text-center text-sm border rounded cursor-pointer hover:bg-blue-50';
+                
+                // Today gets purple border
+                if (dateStr === todayStr) {
+                    className += ' border-purple-500 bg-purple-50';
+                }
+                
+                // Has appointments - show red dot
+                if (dayAppointments.length > 0) {
+                    className += ' font-bold text-red-600';
+                }
+                
+                // Selected date
+                if (dateStr === miniSelectedDate) {
+                    className += ' bg-blue-200';
+                }
+                
+                dayCell.className = className;
+                dayCell.onclick = () => selectMiniDate(dateStr);
+                
+                dayCell.innerHTML = `<div>${day}</div>`;
+                
+                calendarGrid.appendChild(dayCell);
+            }
+            
+            // Show appointments for selected date
+            showMiniDayAppointments();
+        }
+
+        // Select date in mini calendar
+        function selectMiniDate(dateStr) {
+            miniSelectedDate = dateStr;
+            document.getElementById('appointmentDate').value = dateStr;
+            renderMiniCalendar();
+        }
+
+        // Show appointments for selected day in mini calendar
+        function showMiniDayAppointments() {
+            const container = document.getElementById('miniDayAppointments');
+            
+            if (!miniSelectedDate) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-2">בחר תאריך</p>';
+                return;
+            }
+            
+            const date = new Date(miniSelectedDate);
+            const dateFormatted = date.toLocaleDateString('he-IL', { day: 'numeric', month: 'long' });
+            
+            const dayAppointments = appointments.filter(apt => apt.date === miniSelectedDate).sort((a, b) => a.time.localeCompare(b.time));
+            
+            if (dayAppointments.length === 0) {
+                container.innerHTML = `<p class="text-green-600 text-center py-2">✓ ${dateFormatted} - ללא פגישות</p>`;
+                return;
+            }
+            
+            container.innerHTML = `
+                <div class="font-bold mb-2 text-red-600">⚠️ פגישות ב-${dateFormatted}:</div>
+                ${dayAppointments.map(apt => `
+                    <div class="border-r-4 border-red-500 bg-red-50 p-2 mb-2 rounded">
+                        <div class="font-bold">${apt.time} - ${apt.plateNumber}</div>
+                        <div class="text-xs text-gray-600">${apt.type}</div>
+                    </div>
+                `).join('')}
+            `;
+        }
+
+        // Listen to date changes in appointment form
+        document.getElementById('appointmentDate').addEventListener('change', (e) => {
+            miniSelectedDate = e.target.value;
+            renderMiniCalendar();
+        });
+
+        // Save Appointment
+        document.getElementById('appointmentForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const carId = document.getElementById('appointmentCar').value;
+            const car = cars.find(c => c.id === carId);
+            
+            const appointmentData = {
+                userId: currentUser.uid,
+                carId: carId,
+                plateNumber: car.plateNumber,
+                ownerName: car.ownerName,
+                phone: car.phone || '',
+                date: document.getElementById('appointmentDate').value,
+                time: document.getElementById('appointmentTime').value,
+                type: document.getElementById('appointmentType').value,
+                notes: document.getElementById('appointmentNotes').value,
+                reminder: document.getElementById('appointmentReminder').checked,
+                status: 'scheduled',
+                createdAt: new Date().toISOString()
+            };
+            
+            try {
+                if (editingAppointmentId) {
+                    await db.collection('appointments').doc(editingAppointmentId).update(appointmentData);
+                    console.log('Appointment updated:', editingAppointmentId);
+                } else {
+                    const docRef = await db.collection('appointments').add(appointmentData);
+                    console.log('Appointment created:', docRef.id);
+                }
+                
+                await loadAppointments();
+                console.log('Appointments reloaded. Total:', appointments.length);
+                closeAppointmentModal();
+                
+                // Refresh calendar if it's open
+                const calendarModal = document.getElementById('calendarModal');
+                if (calendarModal && !calendarModal.classList.contains('hidden')) {
+                    renderCalendar();
+                }
+                
+                // Send WhatsApp reminder if checked
+                if (appointmentData.reminder && appointmentData.phone) {
+                    sendAppointmentReminder(appointmentData);
+                }
+                
+                alert('הפגישה נשמרה בהצלחה!');
+            } catch (error) {
+                console.error('Error saving appointment:', error);
+                alert('שגיאה בשמירת הפגישה: ' + error.message);
+            }
+        });
+
+        // Send WhatsApp Reminder
+        function sendAppointmentReminder(appointment) {
+            const phone = appointment.phone.replace(/^0/, '972');
+            const date = new Date(appointment.date).toLocaleDateString('he-IL');
+            const message = `שלום ${appointment.ownerName},\n\nמזכירים לך על פגישה במוסך:\n📅 תאריך: ${date}\n⏰ שעה: ${appointment.time}\n🚗 רכב: ${appointment.plateNumber}\n📋 סוג: ${appointment.type}\n\nנתראה!`;
+            const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+            window.open(whatsappUrl, '_blank');
+        }
+
+        // Previous Month
+        function previousMonth() {
+            currentMonth--;
+            if (currentMonth < 0) {
+                currentMonth = 11;
+                currentYear--;
+            }
+            renderCalendar();
+        }
+
+        // Next Month
+        function nextMonth() {
+            currentMonth++;
+            if (currentMonth > 11) {
+                currentMonth = 0;
+                currentYear++;
+            }
+            renderCalendar();
+        }
+
+        // Render Calendar
+        function renderCalendar() {
+            const monthNames = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
+            document.getElementById('currentMonthYear').textContent = `${monthNames[currentMonth]} ${currentYear}`;
+            
+            const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+            const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+            
+            const calendarGrid = document.getElementById('calendarGrid');
+            calendarGrid.innerHTML = '';
+            
+            // Add empty cells for days before month starts
+            for (let i = 0; i < firstDay; i++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.className = 'p-2';
+                calendarGrid.appendChild(emptyCell);
+            }
+            
+            // Add days of month
+            const today = new Date();
+            const todayStr = today.toISOString().split('T')[0];
+            
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const dayAppointments = appointments.filter(apt => apt.date === dateStr);
+                
+                const dayCell = document.createElement('div');
+                
+                // Build class name based on conditions
+                let className = 'p-2 border rounded cursor-pointer hover:bg-blue-50';
+                
+                // Today gets purple border and background
+                if (dateStr === todayStr) {
+                    className += ' border-purple-500 border-2 bg-purple-50';
+                }
+                
+                // Selected date gets blue background
+                if (dateStr === selectedDate && dateStr !== todayStr) {
+                    className += ' bg-blue-200';
+                }
+                
+                // If selected date is today, show both (purple border + blue background)
+                if (dateStr === selectedDate && dateStr === todayStr) {
+                    className += ' bg-blue-200';
+                }
+                
+                dayCell.className = className;
+                dayCell.onclick = () => selectDate(dateStr);
+                
+                dayCell.innerHTML = `
+                    <div class="text-center font-bold">${day}</div>
+                    ${dayAppointments.length > 0 ? `<div class="text-xs text-purple-600 text-center">${dayAppointments.length} פגישות</div>` : ''}
+                `;
+                
+                calendarGrid.appendChild(dayCell);
+            }
+            
+            // Show selected date or today's appointments by default
+            if (!selectedDate) {
+                selectDate(todayStr);
+            } else {
+                // Just update the display without changing selectedDate
+                const date = new Date(selectedDate);
+                const dateFormatted = date.toLocaleDateString('he-IL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                document.getElementById('selectedDayTitle').textContent = `פגישות ליום ${dateFormatted}`;
+                
+                const dayAppointments = appointments.filter(apt => apt.date === selectedDate).sort((a, b) => a.time.localeCompare(b.time));
+                const container = document.getElementById('dayAppointments');
+                
+                if (dayAppointments.length === 0) {
+                    container.innerHTML = '<p class="text-gray-500 text-center py-4">אין פגישות מתוכננות ליום זה</p>';
+                } else {
+                    container.innerHTML = dayAppointments.map(apt => `
+                        <div class="border rounded-lg p-4 mb-3 bg-gray-50">
+                            <div class="flex justify-between items-start mb-2">
+                                <div>
+                                    <div class="font-bold text-lg">${apt.time} - ${apt.type}</div>
+                                    <div class="text-gray-700">🚗 ${apt.plateNumber} - ${apt.ownerName}</div>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button onclick="editAppointment('${apt.id}')" class="text-blue-600 hover:text-blue-800">✏️</button>
+                                    <button onclick="deleteAppointment('${apt.id}')" class="text-red-600 hover:text-red-800">🗑️</button>
+                                </div>
+                            </div>
+                            ${apt.notes ? `<div class="text-sm text-gray-600 mt-2">📝 ${apt.notes}</div>` : ''}
+                            ${apt.phone ? `<button onclick="sendAppointmentReminder(${JSON.stringify(apt).replace(/"/g, '&quot;')})" class="mt-2 text-sm text-green-600 hover:text-green-800">📱 שלח תזכורת ווטסאפ</button>` : ''}
+                        </div>
+                    `).join('');
+                }
+            }
+        }
+
+        // Select Date
+        function selectDate(dateStr) {
+            selectedDate = dateStr;
+            renderCalendar(); // Re-render to update the purple highlight
+        }
+
+        // Edit Appointment
+        async function editAppointment(appointmentId) {
+            const appointment = appointments.find(apt => apt.id === appointmentId);
+            if (!appointment) return;
+            
+            editingAppointmentId = appointmentId;
+            
+            document.getElementById('appointmentCar').value = appointment.carId;
+            document.getElementById('appointmentDate').value = appointment.date;
+            document.getElementById('appointmentTime').value = appointment.time;
+            document.getElementById('appointmentType').value = appointment.type;
+            document.getElementById('appointmentNotes').value = appointment.notes || '';
+            document.getElementById('appointmentReminder').checked = appointment.reminder || false;
+            
+            document.getElementById('appointmentModal').classList.remove('hidden');
+        }
+
+        // Delete Appointment
+        async function deleteAppointment(appointmentId) {
+            if (!confirm('האם אתה בטוח שברצונך למחוק פגישה זו?')) return;
+            
+            try {
+                await db.collection('appointments').doc(appointmentId).delete();
+                await loadAppointments();
+                renderCalendar();
+                alert('הפגישה נמחקה בהצלחה');
+            } catch (error) {
+                console.error('Error deleting appointment:', error);
+                alert('שגיאה במחיקת הפגישה');
+            }
+        }
+
+        // ==========================================
+        // Browser Back Button Support for Mobile
+        // ==========================================
+        
+        // Handle browser back button
+        window.addEventListener('popstate', function(event) {
+            const carModal = document.getElementById('carModal');
+            const detailsModal = document.getElementById('carDetailsModal');
+            const maintenanceModal = document.getElementById('maintenanceModal');
+            const calendarModal = document.getElementById('calendarModal');
+            const appointmentModal = document.getElementById('appointmentModal');
+            
+            // Close any open modal when back button is pressed
+            if (appointmentModal && !appointmentModal.classList.contains('hidden')) {
+                closeAppointmentModal();
+            } else if (calendarModal && !calendarModal.classList.contains('hidden')) {
+                closeCalendarModal();
+            } else if (carModal && !carModal.classList.contains('hidden')) {
+                closeCarModal();
+            } else if (maintenanceModal && !maintenanceModal.classList.contains('hidden')) {
+                closeMaintenanceModal();
+            } else if (detailsModal && !detailsModal.classList.contains('hidden')) {
+                closeCarDetailsModal();
+            }
+        });
+
+        // Wrap modal open functions to add history state
+        (function() {
+            // Save original functions
+            const _openCarModal = window.openCarModal;
+            const _openCarDetailsModal = window.openCarDetailsModal;
+            const _openMaintenanceModal = window.openMaintenanceModal;
+            const _openCalendarModal = window.openCalendarModal;
+            const _openAppointmentModal = window.openAppointmentModal;
+            
+            // Override openCarModal
+            window.openCarModal = function() {
+                _openCarModal();
+                history.pushState({ modal: 'car' }, '', '');
+            };
+            
+            // Override openCarDetailsModal
+            window.openCarDetailsModal = function(carId) {
+                _openCarDetailsModal(carId);
+                history.pushState({ modal: 'details' }, '', '');
+            };
+            
+            // Override openMaintenanceModal
+            window.openMaintenanceModal = function() {
+                _openMaintenanceModal();
+                history.pushState({ modal: 'maintenance' }, '', '');
+            };
+            
+            // Override openCalendarModal
+            window.openCalendarModal = function() {
+                _openCalendarModal();
+                history.pushState({ modal: 'calendar' }, '', '');
+            };
+            
+            // Override openAppointmentModal
+            window.openAppointmentModal = function() {
+                _openAppointmentModal();
+                history.pushState({ modal: 'appointment' }, '', '');
+            };
+        })();
     </script>
+
 </body>
 </html>
