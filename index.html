@@ -94,6 +94,9 @@
                 <button onclick="openCarModal()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
                     + הוסף רכב
                 </button>
+                <button onclick="openDashboard()" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 flex items-center gap-2">
+                    📊 לוח בקרה
+                </button>
                 <button onclick="openCalendarModal()" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 flex items-center gap-2">
                     📅 יומן פגישות
                 </button>
@@ -233,6 +236,17 @@
                                class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
                                placeholder='150 כ"ס / 2000 סמ"ק'>
                     </div>
+                    
+                    <!-- סטטוס רכב -->
+                    <div class="md:col-span-2">
+                        <label class="block text-gray-700 font-bold mb-2">סטטוס רכב</label>
+                        <select id="carStatus" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                            <option value="waiting">ממתין לטיפול</option>
+                            <option value="in_progress">בטיפול</option>
+                            <option value="ready">מוכן לאיסוף</option>
+                            <option value="completed">הושלם</option>
+                        </select>
+                    </div>
                 </div>
                 
                 <div class="flex gap-3 mt-6">
@@ -345,6 +359,75 @@
                     </div>
                     
                     <div id="maintenanceHistory" class="space-y-4"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Modal -->
+    <div id="dashboardModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-2xl max-w-7xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="sticky top-0 bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6 rounded-t-lg">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-3xl font-bold">📊 לוח בקרה - ניהול רכבים</h2>
+                    <button onclick="closeDashboard()" class="text-white hover:text-gray-200 text-3xl leading-none">&times;</button>
+                </div>
+            </div>
+            
+            <div class="p-6">
+                <!-- Statistics -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-yellow-100 border-l-4 border-yellow-500 p-4 rounded">
+                        <div class="text-3xl font-bold text-yellow-700" id="waitingCount">0</div>
+                        <div class="text-sm text-yellow-600">ממתין לטיפול</div>
+                    </div>
+                    <div class="bg-blue-100 border-l-4 border-blue-500 p-4 rounded">
+                        <div class="text-3xl font-bold text-blue-700" id="inProgressCount">0</div>
+                        <div class="text-sm text-blue-600">בטיפול</div>
+                    </div>
+                    <div class="bg-green-100 border-l-4 border-green-500 p-4 rounded">
+                        <div class="text-3xl font-bold text-green-700" id="readyCount">0</div>
+                        <div class="text-sm text-green-600">מוכן לאיסוף</div>
+                    </div>
+                    <div class="bg-gray-100 border-l-4 border-gray-500 p-4 rounded">
+                        <div class="text-3xl font-bold text-gray-700" id="completedCount">0</div>
+                        <div class="text-sm text-gray-600">הושלם</div>
+                    </div>
+                </div>
+                
+                <!-- Kanban Board -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <!-- ממתין לטיפול -->
+                    <div class="bg-yellow-50 rounded-lg p-4">
+                        <h3 class="font-bold text-lg mb-3 text-yellow-700 flex items-center gap-2">
+                            ⏳ ממתין לטיפול
+                        </h3>
+                        <div id="waitingColumn" class="space-y-2 min-h-[200px]"></div>
+                    </div>
+                    
+                    <!-- בטיפול -->
+                    <div class="bg-blue-50 rounded-lg p-4">
+                        <h3 class="font-bold text-lg mb-3 text-blue-700 flex items-center gap-2">
+                            🔧 בטיפול
+                        </h3>
+                        <div id="inProgressColumn" class="space-y-2 min-h-[200px]"></div>
+                    </div>
+                    
+                    <!-- מוכן לאיסוף -->
+                    <div class="bg-green-50 rounded-lg p-4">
+                        <h3 class="font-bold text-lg mb-3 text-green-700 flex items-center gap-2">
+                            ✅ מוכן לאיסוף
+                        </h3>
+                        <div id="readyColumn" class="space-y-2 min-h-[200px]"></div>
+                    </div>
+                    
+                    <!-- הושלם -->
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h3 class="font-bold text-lg mb-3 text-gray-700 flex items-center gap-2">
+                            🏁 הושלם
+                        </h3>
+                        <div id="completedColumn" class="space-y-2 min-h-[200px]"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -920,6 +1003,7 @@
             document.getElementById('immobilizerCode').value = car.immobilizerCode || '';
             document.getElementById('engineType').value = car.engineType || '';
             document.getElementById('enginePower').value = car.enginePower || '';
+            document.getElementById('carStatus').value = car.carStatus || 'waiting';
             
             if (car.imageUrl) {
                 document.getElementById('imagePreview').innerHTML = 
@@ -950,6 +1034,7 @@
                     immobilizerCode: document.getElementById('immobilizerCode').value.trim(),
                     engineType: document.getElementById('engineType').value.trim(),
                     enginePower: document.getElementById('enginePower').value.trim(),
+                    carStatus: document.getElementById('carStatus').value || 'waiting',
                     userId: currentUser.uid,
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                 };
@@ -1875,6 +1960,125 @@
         }
 
         // ==========================================
+        // DASHBOARD FUNCTIONS
+        // ==========================================
+
+        // Open Dashboard
+        function openDashboard() {
+            document.getElementById('dashboardModal').classList.remove('hidden');
+            renderDashboard();
+        }
+
+        // Close Dashboard
+        function closeDashboard() {
+            document.getElementById('dashboardModal').classList.add('hidden');
+        }
+
+        // Render Dashboard
+        function renderDashboard() {
+            // Count cars by status
+            const waiting = cars.filter(c => c.carStatus === 'waiting' || !c.carStatus);
+            const inProgress = cars.filter(c => c.carStatus === 'in_progress');
+            const ready = cars.filter(c => c.carStatus === 'ready');
+            const completed = cars.filter(c => c.carStatus === 'completed');
+            
+            // Update counters
+            document.getElementById('waitingCount').textContent = waiting.length;
+            document.getElementById('inProgressCount').textContent = inProgress.length;
+            document.getElementById('readyCount').textContent = ready.length;
+            document.getElementById('completedCount').textContent = completed.length;
+            
+            // Render columns
+            renderDashboardColumn('waitingColumn', waiting, 'waiting');
+            renderDashboardColumn('inProgressColumn', inProgress, 'in_progress');
+            renderDashboardColumn('readyColumn', ready, 'ready');
+            renderDashboardColumn('completedColumn', completed, 'completed');
+        }
+
+        // Render Dashboard Column
+        function renderDashboardColumn(columnId, carsList, status) {
+            const column = document.getElementById(columnId);
+            
+            if (carsList.length === 0) {
+                column.innerHTML = '<p class="text-gray-400 text-center py-4 text-sm">אין רכבים</p>';
+                return;
+            }
+            
+            column.innerHTML = carsList.map(car => `
+                <div class="bg-white rounded-lg p-3 shadow hover:shadow-md transition cursor-pointer border-r-4 ${getStatusColor(status)}" 
+                     onclick="openCarDetailsModal('${car.id}')">
+                    <div class="font-bold text-sm mb-1">${car.plateNumber}</div>
+                    <div class="text-xs text-gray-600 mb-2">${car.ownerName || ''}</div>
+                    ${car.carType || car.model ? `<div class="text-xs text-gray-500">${car.carType || ''} ${car.model || ''}</div>` : ''}
+                    
+                    <!-- Status Buttons -->
+                    <div class="mt-2 flex gap-1 flex-wrap" onclick="event.stopPropagation()">
+                        ${status !== 'waiting' ? `<button onclick="changeCarStatus('${car.id}', 'waiting')" class="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded hover:bg-yellow-200" title="העבר לממתין">⏳</button>` : ''}
+                        ${status !== 'in_progress' ? `<button onclick="changeCarStatus('${car.id}', 'in_progress')" class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200" title="העבר לטיפול">🔧</button>` : ''}
+                        ${status !== 'ready' ? `<button onclick="changeCarStatus('${car.id}', 'ready')" class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200" title="סמן כמוכן">✅</button>` : ''}
+                        ${status !== 'completed' ? `<button onclick="changeCarStatus('${car.id}', 'completed')" class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded hover:bg-gray-200" title="סמן כהושלם">🏁</button>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Get Status Color
+        function getStatusColor(status) {
+            const colors = {
+                'waiting': 'border-yellow-500',
+                'in_progress': 'border-blue-500',
+                'ready': 'border-green-500',
+                'completed': 'border-gray-500'
+            };
+            return colors[status] || 'border-gray-300';
+        }
+
+        // Change Car Status
+        async function changeCarStatus(carId, newStatus) {
+            try {
+                await db.collection('cars').doc(carId).update({
+                    carStatus: newStatus,
+                    statusUpdatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                // Update local cars array
+                const carIndex = cars.findIndex(c => c.id === carId);
+                if (carIndex !== -1) {
+                    cars[carIndex].carStatus = newStatus;
+                }
+                
+                renderDashboard();
+                
+                // Show notification
+                const statusNames = {
+                    'waiting': 'ממתין לטיפול',
+                    'in_progress': 'בטיפול',
+                    'ready': 'מוכן לאיסוף',
+                    'completed': 'הושלם'
+                };
+                
+                const car = cars.find(c => c.id === carId);
+                showNotification(`${car.plateNumber} הועבר ל: ${statusNames[newStatus]}`);
+                
+            } catch (error) {
+                console.error('Error changing car status:', error);
+                alert('שגיאה בעדכון הסטטוס');
+            }
+        }
+
+        // Show Notification
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-4 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-[100]';
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 2000);
+        }
+
+        // ==========================================
         // Browser Back Button Support for Mobile
         // ==========================================
         
@@ -1885,9 +2089,12 @@
             const maintenanceModal = document.getElementById('maintenanceModal');
             const calendarModal = document.getElementById('calendarModal');
             const appointmentModal = document.getElementById('appointmentModal');
+            const dashboardModal = document.getElementById('dashboardModal');
             
             // Close any open modal when back button is pressed
-            if (appointmentModal && !appointmentModal.classList.contains('hidden')) {
+            if (dashboardModal && !dashboardModal.classList.contains('hidden')) {
+                closeDashboard();
+            } else if (appointmentModal && !appointmentModal.classList.contains('hidden')) {
                 closeAppointmentModal();
             } else if (calendarModal && !calendarModal.classList.contains('hidden')) {
                 closeCalendarModal();
@@ -1908,6 +2115,7 @@
             const _openMaintenanceModal = window.openMaintenanceModal;
             const _openCalendarModal = window.openCalendarModal;
             const _openAppointmentModal = window.openAppointmentModal;
+            const _openDashboard = window.openDashboard;
             
             // Override openCarModal
             window.openCarModal = function() {
@@ -1937,6 +2145,12 @@
             window.openAppointmentModal = function() {
                 _openAppointmentModal();
                 history.pushState({ modal: 'appointment' }, '', '');
+            };
+            
+            // Override openDashboard
+            window.openDashboard = function() {
+                _openDashboard();
+                history.pushState({ modal: 'dashboard' }, '', '');
             };
         })();
     </script>
