@@ -100,6 +100,9 @@
                 <button onclick="openCalendarModal()" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 flex items-center gap-2">
                     📅 יומן פגישות
                 </button>
+                <button onclick="openSettings()" class="bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700 flex items-center gap-2">
+                    ⚙️ הגדרות
+                </button>
                 <button onclick="exportCSV()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
                     ייצא נתונים
                 </button>
@@ -428,6 +431,34 @@
                         </h3>
                         <div id="completedColumn" class="space-y-2 min-h-[200px]"></div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-2xl max-w-lg w-full">
+            <div class="bg-orange-600 text-white p-6 rounded-t-lg">
+                <h2 class="text-2xl font-bold">⚙️ הגדרות</h2>
+            </div>
+            
+            <div class="p-6">
+                <div class="mb-6">
+                    <label class="block text-gray-700 font-bold mb-2">טלפון חנות חלפים</label>
+                    <input type="text" id="sparePartsPhone" 
+                           class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-orange-500"
+                           placeholder="050-1234567">
+                    <p class="text-xs text-gray-500 mt-1">מספר זה ישמש לשליחת הזמנות חלקים בוואטסאפ</p>
+                </div>
+                
+                <div class="flex gap-3">
+                    <button onclick="saveSettings()" class="flex-1 bg-orange-600 text-white px-6 py-3 rounded-lg hover:bg-orange-700 font-bold">
+                        שמור
+                    </button>
+                    <button onclick="closeSettings()" class="flex-1 bg-gray-300 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-400 font-bold">
+                        ביטול
+                    </button>
                 </div>
             </div>
         </div>
@@ -936,6 +967,7 @@
                                     ${m.kilometers ? `<div class="text-sm text-gray-600">🚗 ${m.kilometers} ק״מ</div>` : ''}
                                 </div>
                                 <div class="flex gap-2">
+                                    ${m.partName ? `<button onclick="orderSparePart('${m.partName.replace(/'/g, "\\'")}', '${car.carType || ''}', '${car.model || ''}', '${car.year || ''}')" class="text-green-600 hover:underline text-sm">📦 הזמן חלק</button>` : ''}
                                     <button onclick="printMaintenance('${m.id}')" class="text-purple-600 hover:underline text-sm">🖨️ הדפס</button>
                                     <button onclick="editMaintenance('${m.id}')" class="text-blue-600 hover:underline text-sm">עריכה</button>
                                     <button onclick="deleteMaintenance('${m.id}')" class="text-red-600 hover:underline text-sm">מחיקה</button>
@@ -2017,6 +2049,7 @@
                         ${status !== 'in_progress' ? `<button onclick="changeCarStatus('${car.id}', 'in_progress')" class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200" title="העבר לטיפול">🔧</button>` : ''}
                         ${status !== 'ready' ? `<button onclick="changeCarStatus('${car.id}', 'ready')" class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200" title="סמן כמוכן">✅</button>` : ''}
                         ${status !== 'completed' ? `<button onclick="changeCarStatus('${car.id}', 'completed')" class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded hover:bg-gray-200" title="סמן כהושלם">🏁</button>` : ''}
+                        ${status === 'completed' ? `<button onclick="deleteCarFromDashboard('${car.id}')" class="text-xs bg-red-100 text-red-700 px-2 py-1 rounded hover:bg-red-200" title="מחק מהמערכת">🗑️</button>` : ''}
                     </div>
                 </div>
             `).join('');
@@ -2076,6 +2109,111 @@
             setTimeout(() => {
                 notification.remove();
             }, 2000);
+        }
+
+        // Delete Car from Dashboard
+        async function deleteCarFromDashboard(carId) {
+            const car = cars.find(c => c.id === carId);
+            if (!car) return;
+            
+            if (!confirm(`האם אתה בטוח שברצונך למחוק את ${car.plateNumber} מהמערכת?`)) return;
+            
+            try {
+                // Delete car
+                await db.collection('cars').doc(carId).delete();
+                
+                // Delete all maintenance records for this car
+                const maintenanceSnapshot = await db.collection('maintenance')
+                    .where('carId', '==', carId)
+                    .get();
+                
+                const deletePromises = [];
+                maintenanceSnapshot.forEach(doc => {
+                    deletePromises.push(db.collection('maintenance').doc(doc.id).delete());
+                });
+                
+                await Promise.all(deletePromises);
+                
+                // Update local array
+                cars = cars.filter(c => c.id !== carId);
+                
+                renderDashboard();
+                showNotification('הרכב נמחק בהצלחה');
+                
+            } catch (error) {
+                console.error('Error deleting car:', error);
+                alert('שגיאה במחיקת הרכב');
+            }
+        }
+
+        // ==========================================
+        // SETTINGS FUNCTIONS
+        // ==========================================
+
+        let sparePartsPhone = '';
+
+        // Load Settings
+        async function loadSettings() {
+            try {
+                const settingsDoc = await db.collection('settings').doc(currentUser.uid).get();
+                if (settingsDoc.exists) {
+                    sparePartsPhone = settingsDoc.data().sparePartsPhone || '';
+                }
+            } catch (error) {
+                console.error('Error loading settings:', error);
+            }
+        }
+
+        // Open Settings
+        async function openSettings() {
+            await loadSettings();
+            document.getElementById('sparePartsPhone').value = sparePartsPhone;
+            document.getElementById('settingsModal').classList.remove('hidden');
+        }
+
+        // Close Settings
+        function closeSettings() {
+            document.getElementById('settingsModal').classList.add('hidden');
+        }
+
+        // Save Settings
+        async function saveSettings() {
+            try {
+                const phone = document.getElementById('sparePartsPhone').value.trim();
+                
+                await db.collection('settings').doc(currentUser.uid).set({
+                    sparePartsPhone: phone,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
+                
+                sparePartsPhone = phone;
+                closeSettings();
+                showNotification('ההגדרות נשמרו בהצלחה');
+                
+            } catch (error) {
+                console.error('Error saving settings:', error);
+                alert('שגיאה בשמירת ההגדרות');
+            }
+        }
+
+        // Order Spare Part via WhatsApp
+        async function orderSparePart(partName, carType, model, year) {
+            // Load settings if not loaded
+            if (!sparePartsPhone) {
+                await loadSettings();
+            }
+            
+            if (!sparePartsPhone) {
+                alert('אנא הגדר מספר טלפון של חנות חלפים בהגדרות');
+                openSettings();
+                return;
+            }
+            
+            const phone = sparePartsPhone.replace(/^0/, '972').replace(/[^0-9]/g, '');
+            const message = `שלום,\n\nאני מעוניין להזמין:\n📦 חלק: ${partName}\n\n🚗 רכב:\nסוג: ${carType}\nדגם: ${model}\nשנה: ${year}\n\nתודה!`;
+            
+            const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+            window.open(whatsappUrl, '_blank');
         }
 
         // ==========================================
