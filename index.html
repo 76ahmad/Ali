@@ -14,18 +14,812 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 
     <style>
-        .loader {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #3b82f6;
+        :root {
+            --primary: #f59e0b;
+            --primary-dark: #d97706;
+            --primary-light: #fbbf24;
+            --secondary: #0f172a;
+            --secondary-light: #1e293b;
+            --accent: #3b82f6;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --gray-50: #f8fafc;
+            --gray-100: #f1f5f9;
+            --gray-200: #e2e8f0;
+            --gray-300: #cbd5e1;
+            --gray-400: #94a3b8;
+            --gray-500: #64748b;
+            --gray-600: #475569;
+            --gray-700: #334155;
+            --gray-800: #1e293b;
+            --gray-900: #0f172a;
+            --white: #ffffff;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            --shadow-md: 0 6px 12px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 25px -5px rgb(0 0 0 / 0.15);
+            --shadow-xl: 0 20px 40px -10px rgb(0 0 0 / 0.2);
+            
+            /* Light Mode Colors */
+            --bg-primary: #f8fafc;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #f1f5f9;
+            --text-primary: #0f172a;
+            --text-secondary: #64748b;
+            --text-tertiary: #94a3b8;
+            --border-color: #e2e8f0;
+            --card-bg: #ffffff;
+        }
+        
+        /* Dark Mode */
+        [data-theme="dark"] {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --text-primary: #f8fafc;
+            --text-secondary: #cbd5e1;
+            --text-tertiary: #94a3b8;
+            --border-color: #334155;
+            --card-bg: #1e293b;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3);
+            --shadow-md: 0 6px 12px -2px rgb(0 0 0 / 0.4);
+            --shadow-lg: 0 10px 25px -5px rgb(0 0 0 / 0.5);
+            --shadow-xl: 0 20px 40px -10px rgb(0 0 0 / 0.6);
+        }
+        
+        /* Dark Mode - Text Colors Override */
+        [data-theme="dark"] .text-gray-900,
+        [data-theme="dark"] h1,
+        [data-theme="dark"] h2,
+        [data-theme="dark"] h3 {
+            color: #f8fafc !important;
+        }
+        
+        [data-theme="dark"] .text-gray-700,
+        [data-theme="dark"] .text-gray-800,
+        [data-theme="dark"] label {
+            color: #e2e8f0 !important;
+        }
+        
+        [data-theme="dark"] .text-gray-600 {
+            color: #cbd5e1 !important;
+        }
+        
+        [data-theme="dark"] .text-gray-500 {
+            color: #94a3b8 !important;
+        }
+        
+        [data-theme="dark"] .text-gray-400 {
+            color: #64748b !important;
+        }
+        
+        /* Dark Mode - Background Colors */
+        [data-theme="dark"] .bg-white {
+            background-color: #1e293b !important;
+        }
+        
+        [data-theme="dark"] .bg-gray-50,
+        [data-theme="dark"] .bg-gray-100 {
+            background-color: #334155 !important;
+        }
+        
+        /* Dark Mode - Borders */
+        [data-theme="dark"] .border-gray-200,
+        [data-theme="dark"] .border-gray-300 {
+            border-color: #475569 !important;
+        }
+        
+        /* Dark Mode - Inputs */
+        [data-theme="dark"] input,
+        [data-theme="dark"] select,
+        [data-theme="dark"] textarea {
+            background-color: #334155 !important;
+            color: #f8fafc !important;
+            border-color: #475569 !important;
+        }
+        
+        [data-theme="dark"] input::placeholder,
+        [data-theme="dark"] select::placeholder,
+        [data-theme="dark"] textarea::placeholder {
+            color: #94a3b8 !important;
+        }
+        
+        /* Dark Mode - Modal */
+        [data-theme="dark"] .modal-content,
+        [data-theme="dark"] #carModal > div,
+        [data-theme="dark"] #carSelectorModal > div {
+            background-color: #1e293b !important;
+        }
+        
+        /* Dark Mode - Cards remain visible */
+        [data-theme="dark"] .card {
+            background-color: #1e293b !important;
+            border-color: #475569 !important;
+        }
+        
+        /* Dark Mode - Amber colors remain visible */
+        [data-theme="dark"] .text-amber-600,
+        [data-theme="dark"] .text-amber-700,
+        [data-theme="dark"] .text-amber-800 {
+            /* Keep amber colors as they are visible in dark mode */
+        }
+        
+        /* Dark Mode - Select elements */
+        [data-theme="dark"] select option {
+            background-color: #1e293b !important;
+            color: #f8fafc !important;
+        }
+        
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-tertiary) 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            color: var(--text-primary);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+        
+        /* Dark Mode Toggle Button */
+        .theme-toggle {
+            position: relative;
+            width: 60px;
+            height: 32px;
+            background: var(--bg-tertiary);
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            padding: 0 4px;
+            flex-shrink: 0;
+        }
+        
+        .theme-toggle-slider {
+            width: 24px;
+            height: 24px;
+            background: var(--primary);
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            will-change: transform;
+        }
+        
+        [data-theme="dark"] .theme-toggle-slider {
+            transform: translateX(28px);
+        }
+        
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+            .logo-badge {
+                width: 48px;
+                height: 48px;
+            }
+            
+            .logo-badge span {
+                font-size: 1.5rem;
+            }
+            
+            .app-header h1 {
+                font-size: 1.25rem;
+            }
+            
+            .app-header p {
+                font-size: 0.75rem;
+            }
+            
+            .user-badge {
+                padding: 0.5rem 0.75rem;
+                font-size: 0.875rem;
+            }
+            
+            .btn {
+                padding: 0.5rem 1rem;
+                font-size: 0.8rem;
+            }
+            
+            .theme-toggle {
+                width: 56px;
+                height: 30px;
+            }
+            
+            .theme-toggle-slider {
+                width: 22px;
+                height: 22px;
+                font-size: 11px;
+            }
+            
+            [data-theme="dark"] .theme-toggle-slider {
+                transform: translateX(26px);
+            }
+            
+            .cards-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            
+            .section-title {
+                font-size: 1.25rem;
+            }
+            
+            .card {
+                border-radius: 12px;
+            }
+            
+            .card .info-item {
+                font-size: 0.8rem;
+            }
+        }
+        
+        @media (max-width: 640px) {
+            .app-header {
+                padding: 0.75rem 0;
+            }
+            
+            .header-actions {
+                flex-wrap: wrap;
+                gap: 0.5rem;
+            }
+            
+            .user-badge span:not(.text-lg) {
+                display: none;
+            }
+            
+            .btn-danger {
+                padding: 0.5rem 0.75rem;
+            }
+            
+            .btn-danger span {
+                display: none;
+            }
+            
+            .btn-danger::after {
+                content: '⬅';
+            }
+            
+            .header-buttons {
+                width: 100%;
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.5rem;
+            }
+            
+            .header-buttons .btn {
+                font-size: 0.75rem;
+                padding: 0.5rem 0.75rem;
+                white-space: nowrap;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .logo-badge {
+                width: 40px;
+                height: 40px;
+            }
+            
+            .logo-badge span {
+                font-size: 1.25rem;
+            }
+            
+            .app-header h1 {
+                font-size: 1rem;
+            }
+            
+            .app-header p {
+                display: none;
+            }
+            
+            .theme-toggle {
+                width: 52px;
+                height: 28px;
+            }
+            
+            .theme-toggle-slider {
+                width: 20px;
+                height: 20px;
+                font-size: 10px;
+            }
+            
+            [data-theme="dark"] .theme-toggle-slider {
+                transform: translateX(24px);
+            }
+            
+            .user-badge {
+                padding: 0.375rem 0.5rem;
+            }
+            
+            .header-buttons {
+                grid-template-columns: 1fr;
+            }
+            
+            /* Modal improvements for mobile */
+            .modal-content {
+                margin: 1rem;
+                max-height: calc(100vh - 2rem);
+                overflow-y: auto;
+            }
+            
+            /* Form inputs on mobile */
+            input, select, textarea {
+                font-size: 16px !important; /* Prevent zoom on iOS */
+            }
+            
+            /* Button grid on mobile */
+            .grid.grid-cols-3 {
+                grid-template-columns: 1fr;
+                gap: 0.5rem;
+            }
+            
+            /* Card padding on mobile */
+            .card > div {
+                padding: 1rem;
+            }
+            
+            /* Search bar on mobile */
+            #searchInput {
+                font-size: 16px;
+            }
+            
+            /* Image upload on mobile */
+            label[for="carImage"] {
+                padding: 3rem 1.5rem !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                touch-action: manipulation;
+                min-height: 220px !important;
+                border-width: 5px !important;
+            }
+            
+            label[for="carImage"] svg {
+                width: 4rem !important;
+                height: 4rem !important;
+            }
+            
+            label[for="carImage"] div {
+                font-size: 1.3rem !important;
+            }
+            
+            #imagePreview img {
+                width: 100% !important;
+                height: auto !important;
+                max-width: 300px;
+            }
+        }
+        
+        /* Landscape mobile */
+        @media (max-width: 768px) and (orientation: landscape) {
+            .app-header {
+                position: relative;
+            }
+            
+            .modal-content {
+                max-height: calc(100vh - 1rem);
+                overflow-y: auto;
+            }
+        }
+        
+        /* Touch improvements */
+        @media (hover: none) and (pointer: coarse) {
+            .btn {
+                min-height: 44px; /* Apple's recommended touch target */
+                min-width: 44px;
+            }
+            
+            .theme-toggle {
+                min-height: 44px;
+                width: 70px;
+            }
+            
+            .card:active {
+                transform: scale(0.98);
+            }
+            
+            .btn:active {
+                transform: scale(0.95);
+            }
+            
+            /* Better touch target for file input */
+            label[for="carImage"] {
+                min-height: 200px !important;
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: center !important;
+                justify-content: center !important;
+            }
+        }
+        
+        /* Loading Animation */
+        .loader {
+            width: 60px;
+            height: 60px;
+            border: 5px solid var(--border-color);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
         }
         
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        /* Card Styles */
+        .card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid var(--border-color);
+        }
+        
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--primary-light);
+        }
+        
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.625rem 1.25rem;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+            outline: none;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+        
+        .btn:active::before {
+            width: 300px;
+            height: 300px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: var(--white);
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
+        }
+        
+        .btn-secondary {
+            background: var(--card-bg);
+            color: var(--text-primary);
+            border: 2px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .btn-secondary:hover {
+            border-color: var(--primary);
+            background: var(--bg-tertiary);
+            transform: translateY(-2px);
+        }
+        
+        .btn-dark {
+            background: linear-gradient(135deg, var(--gray-800) 0%, var(--gray-900) 100%);
+            color: var(--white);
+        }
+        
+        .btn-dark:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .btn-success {
+            background: var(--success);
+            color: var(--white);
+        }
+        
+        .btn-success:hover {
+            background: #059669;
+            transform: translateY(-2px);
+        }
+        
+        .btn-danger {
+            background: var(--danger);
+            color: var(--white);
+        }
+        
+        .btn-danger:hover {
+            background: #dc2626;
+            transform: translateY(-2px);
+        }
+        
+        /* Header */
+        .app-header {
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+            backdrop-filter: blur(10px);
+            position: sticky;
+            top: 0;
+            z-index: 40;
+        }
+        
+        .header-accent {
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary) 0%, var(--primary-light) 50%, var(--primary) 100%);
+        }
+        
+        /* Logo Badge */
+        .logo-badge {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+        }
+        
+        /* User Badge */
+        .user-badge {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            padding: 0.625rem 1.25rem;
+            border-radius: 12px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        /* Input Styles */
+        input, select, textarea {
+            transition: all 0.2s ease;
+            background: var(--card-bg);
+            color: var(--text-primary);
+            border-color: var(--border-color);
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary) !important;
+            box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.1) !important;
+        }
+        
+        /* Badge */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.375rem;
+            padding: 0.375rem 0.75rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.75rem;
+            letter-spacing: 0.025em;
+        }
+        
+        .badge-primary {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--primary-dark);
+        }
+        
+        .badge-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+        }
+        
+        /* Status Badges */
+        .status-waiting {
+            background: rgba(234, 179, 8, 0.1);
+            color: #eab308;
+            border: 1px solid rgba(234, 179, 8, 0.2);
+        }
+        
+        .status-progress {
+            background: rgba(59, 130, 246, 0.1);
+            color: #3b82f6;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+        
+        .status-ready {
+            background: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+        
+        .status-completed {
+            background: rgba(100, 116, 139, 0.1);
+            color: #94a3b8;
+            border: 1px solid rgba(100, 116, 139, 0.2);
+        }
+        
+        /* Modal Backdrop */
+        .modal-backdrop {
+            backdrop-filter: blur(8px);
+            background: rgba(15, 23, 42, 0.5);
+            animation: fadeIn 0.2s ease;
+        }
+        
+        [data-theme="dark"] .modal-backdrop {
+            background: rgba(0, 0, 0, 0.7);
+        }
+        
+        /* Info Item */
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 0.625rem;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            padding: 0.5rem 0;
+        }
+        
+        .info-item strong {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+        
+        /* Car Image */
+        .car-image {
+            aspect-ratio: 16/9;
+            object-fit: cover;
+            width: 100%;
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .car-image-placeholder {
+            aspect-ratio: 16/9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+        
+        .car-image-placeholder:hover {
+            background: var(--bg-primary);
+        }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: var(--bg-tertiary);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 5px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-dark);
+        }
+        
+        /* Loading Screen */
+        .loading-screen {
+            background: var(--bg-secondary);
+            animation: fadeIn 0.3s ease;
+        }
+        
+        /* Section Title */
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .section-title::after {
+            content: '';
+            flex: 1;
+            height: 2px;
+            background: linear-gradient(90deg, var(--primary) 0%, transparent 100%);
+        }
+        
+        /* Stats Card */
+        .stat-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 1.5rem;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+            transition: all 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+            border-color: var(--primary-light);
+        }
+        
+        /* Accent Line */
+        .accent-line {
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary) 0%, var(--primary-light) 100%);
+            border-radius: 2px;
+        }
+        
+        /* Glass Effect */
+        .glass {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        [data-theme="dark"] .glass {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Notification */
+        .notification {
+            animation: slideUp 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+        
+        /* Card Grid */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.5rem;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        /* Divider */
+        .divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent 0%, var(--border-color) 50%, transparent 100%);
         }
     </style>
 
@@ -33,75 +827,119 @@
 <body class="bg-gray-100 min-h-screen">
 
     <!-- Loading Screen -->
-    <div id="loadingScreen" class="fixed inset-0 bg-white z-50 flex items-center justify-center">
+    <div id="loadingScreen" class="loading-screen fixed inset-0 z-50 flex items-center justify-center">
         <div class="text-center">
-            <div class="loader mx-auto mb-4"></div>
-            <p class="text-gray-600">טוען מערכת...</p>
+            <div class="mb-6">
+                <div style="font-size: 52px; font-weight: 900; color: #f59e0b; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); letter-spacing: 3px; font-family: Arial, sans-serif;">
+                    🏁 DRVN
+                </div>
+            </div>
+            <div class="loader mx-auto mb-6"></div>
+            <h2 class="text-2xl font-bold text-gray-900 mb-2">מערכת ניהול מוסך</h2>
+            <p class="text-gray-600 font-medium">טוען את המערכת...</p>
+            <div class="mt-6 w-48 h-1 bg-gray-200 rounded-full mx-auto overflow-hidden">
+                <div class="h-full bg-gradient-to-r from-amber-500 to-orange-500 rounded-full animate-pulse" style="width: 60%"></div>
+            </div>
         </div>
     </div>
 
     <!-- Login Screen -->
-    <div id="loginScreen" class="hidden fixed inset-0 bg-blue-50 z-40 flex items-center justify-center p-4">
-        <div class="bg-white rounded-lg shadow-xl p-8 max-w-md w-full">
-            <h1 class="text-2xl font-bold text-center mb-6">מערכת ניהול מוסך</h1>
-            
-            <div id="errorMsg" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4"></div>
-            <div id="successMsg" class="hidden bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4"></div>
-            
-            <form id="loginForm">
-                <div class="mb-4">
-                    <label class="block text-gray-700 mb-2">אימייל</label>
-                    <input type="email" id="email" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
-                </div>
-                
+    <div id="loginScreen" class="hidden fixed inset-0 z-40 flex items-center justify-center p-4" style="background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);">
+        <div class="card max-w-md w-full p-10 shadow-xl">
+            <div class="text-center mb-8">
                 <div class="mb-6">
-                    <label class="block text-gray-700 mb-2">סיסמה</label>
-                    <input type="password" id="password" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                    <div style="font-size: 48px; font-weight: 900; color: #f59e0b; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); letter-spacing: 3px; font-family: Arial, sans-serif;">
+                        🏁 DRVN
+                    </div>
+                </div>
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">מערכת ניהול מוסך</h1>
+                <p class="text-gray-600">ניהול מקצועי ויעיל לרכבים</p>
+                <div class="accent-line w-24 mx-auto mt-4"></div>
+            </div>
+            
+            <div id="errorMsg" class="hidden bg-red-50 border-r-4 border-red-500 text-red-700 px-4 py-3 rounded-xl mb-4 text-sm font-medium"></div>
+            <div id="successMsg" class="hidden bg-green-50 border-r-4 border-green-500 text-green-700 px-4 py-3 rounded-xl mb-4 text-sm font-medium"></div>
+            
+            <form id="loginForm" class="space-y-5">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">אימייל</label>
+                    <input type="email" id="email" required 
+                           class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-amber-500 transition-all"
+                           placeholder="your@email.com">
                 </div>
                 
-                <button type="submit" id="authBtn" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700">
-                    התחבר
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">סיסמה</label>
+                    <input type="password" id="password" required 
+                           class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-amber-500 transition-all"
+                           placeholder="••••••••">
+                </div>
+                
+                <button type="submit" id="authBtn" class="btn btn-primary w-full py-4 text-base font-bold shadow-lg">
+                    🚀 התחבר למערכת
                 </button>
             </form>
             
-            <p class="text-center mt-4">
-                <a href="#" id="toggleAuth" class="text-blue-600 hover:underline">אין לך חשבון? הירשם</a>
-            </p>
+            <div class="divider my-6"></div>
+            
+            <div class="text-center">
+                <a href="#" id="toggleAuth" class="text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors">
+                    אין לך חשבון? <span class="text-amber-600 font-bold hover:text-amber-700">הירשם כאן</span>
+                </a>
+            </div>
         </div>
     </div>
 
     <!-- Main App -->
-    <div id="mainApp" class="hidden container mx-auto px-4 py-8">
+    <div id="mainApp" class="hidden min-h-screen">
         <!-- Header -->
-        <div class="bg-white rounded-lg shadow p-6 mb-6">
-            <div class="flex justify-between items-center mb-4 flex-wrap gap-3">
-                <div class="flex items-center gap-3">
-                    <h1 class="text-2xl font-bold">מערכת ניהול מוסך</h1>
-                    <div class="flex items-center gap-2 bg-blue-50 px-3 py-2 rounded-lg">
-                        <span class="text-gray-600">👤</span>
-                        <span id="userName" class="font-bold text-blue-700">משתמש</span>
-                        <button onclick="editUserName()" class="text-blue-600 hover:text-blue-800" title="ערוך שם">
-                            ✏️
+        <header class="app-header">
+            <div class="header-accent"></div>
+            <div class="container mx-auto px-4 py-4">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-3">
+                        <div>
+                            <div style="font-size: 28px; font-weight: 900; color: #f59e0b; text-shadow: 1px 1px 2px rgba(0,0,0,0.2); letter-spacing: 2px; font-family: Arial, sans-serif;">
+                                🏁 DRVN
+                            </div>
+                        </div>
+                        <div>
+                            <h1 class="text-2xl font-bold text-gray-900">מערכת ניהול מוסך</h1>
+                            <p class="text-sm text-gray-600 font-medium">ניהול מקצועי ויעיל</p>
+                        </div>
+                    </div>
+                    
+                    <div class="header-actions flex items-center gap-2">
+                        <div class="theme-toggle" onclick="toggleTheme()" title="تبديل الوضع الليلي">
+                            <div class="theme-toggle-slider">
+                                <span id="themeIcon">☀️</span>
+                            </div>
+                        </div>
+                        <div class="user-badge">
+                            <span class="text-lg">👤</span>
+                            <span id="userName" class="font-semibold">משתמש</span>
+                            <button onclick="editUserName()" class="hover:opacity-70 transition-opacity" title="ערוך שם">
+                                ✏️
+                            </button>
+                        </div>
+                        <button onclick="signOut()" class="btn btn-danger">
+                            <span>יציאה</span>
                         </button>
                     </div>
                 </div>
-                <button onclick="signOut()" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
-                    יציאה
-                </button>
-            </div>
-            
-            <div class="flex gap-4 mb-4 flex-wrap">
-                <button onclick="openCarModal()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-                    + הוסף רכב
-                </button>
-                <button onclick="openDashboard()" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 flex items-center gap-2">
-                    📊 לוח בקרה
-                </button>
-                <button onclick="openCalendarModal()" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 flex items-center gap-2">
-                    📅 יומן פגישות
-                </button>
-                <button onclick="openSettings()" class="bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700 flex items-center gap-2">
-                    ⚙️ הגדרות
+                
+                <div class="header-buttons flex gap-2 flex-wrap">
+                    <button onclick="openCarModal()" class="btn btn-primary">
+                        ➕ הוסף רכב חדש
+                    </button>
+                    <button onclick="openDashboard()" class="btn btn-secondary">
+                        📊 לוח בקרה
+                    </button>
+                    <button onclick="openCalendarModal()" class="btn btn-secondary">
+                        📅 יומן פגישות
+                    </button>
+                    <button onclick="openSettings()" class="btn btn-secondary">
+                        ⚙️ הגדרות
                 </button>
                 <button onclick="openBackupModal()" class="bg-teal-600 text-white px-4 py-2 rounded hover:bg-teal-700 flex items-center gap-2">
                     💾 גיבוי
@@ -111,12 +949,19 @@
                 </button>
             </div>
             
-            <input type="text" id="searchBox" placeholder="חיפוש..." onkeyup="searchCars()" 
-                   class="w-full px-3 py-2 border rounded-lg">
+            <div class="relative">
+                <input type="text" id="searchBox" placeholder="🔍 חפש לפי מספר רישוי, שם הבעלים, סוג רכב..." onkeyup="searchCars()" oninput="searchCars()"
+                       class="w-full px-4 py-3 pr-12 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-amber-500 text-base" 
+                       style="font-size: 16px;">
+                <button onclick="document.getElementById('searchBox').value=''; searchCars();" 
+                        class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                    ✕
+                </button>
+            </div>
         </div>
 
         <!-- Cars Grid -->
-        <div id="carsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+        <div id="carsGrid" class="cards-grid"></div>
         
         <!-- Empty State -->
         <div id="emptyState" class="text-center py-12 hidden">
@@ -134,28 +979,41 @@
             
             <form id="carForm">
                 <!-- תמונת הרכב -->
-                <div class="mb-4 text-center">
-                    <label class="block text-gray-700 font-bold mb-2">תמונת הרכב</label>
-                    <div class="flex justify-center">
-                        <label class="cursor-pointer bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg p-4 hover:bg-gray-50 flex items-center gap-2">
-                            <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="mb-6">
+                    <label class="block text-gray-800 font-bold mb-4 text-center text-xl">📸 תמונת הרכב</label>
+                    <div class="flex justify-center mb-2">
+                        <label for="carImage" class="cursor-pointer bg-gradient-to-br from-amber-100 to-amber-50 border-4 border-dashed border-amber-500 rounded-2xl p-10 hover:from-amber-200 hover:to-amber-100 transition-all hover:border-amber-600 w-full text-center shadow-2xl active:scale-95" style="min-height: 200px; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                            <svg class="w-20 h-20 text-amber-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                             </svg>
-                            <span class="text-gray-600">העלה תמונה</span>
+                            <div class="text-amber-800 font-black mb-3" style="font-size: 22px;">👆 לחץ כאן להעלאת תמונה</div>
+                            <div class="text-amber-700 font-semibold" style="font-size: 16px;">📷 מהמצלמה או מהגלריה</div>
+                            <div class="text-gray-600 text-sm mt-2">JPG, PNG עד 10MB</div>
                             <input type="file" id="carImage" accept="image/*" class="hidden">
                         </label>
                     </div>
-                    <div id="imagePreview" class="mt-3"></div>
-                    <p class="text-xs text-green-600 mt-1">✓ דחיסה אוטומטית</p>
+                    <div id="imagePreview" class="mt-4 flex justify-center"></div>
                 </div>
+
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <!-- מספר רישוי -->
-                    <div>
+                    <div class="md:col-span-2">
                         <label class="block text-gray-700 font-bold mb-2">מספר רישוי *</label>
-                        <input type="text" id="plateNumber" required 
-                               class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
-                               placeholder="12-345-67">
+                        <div class="flex gap-2">
+                            <input type="text" id="plateNumber" required 
+                                   class="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                                   placeholder="12-345-67"
+                                   oninput="formatPlateNumber(this)">
+                            <button type="button" onclick="lookupCarInfoFromAPI()" 
+                                    class="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-2 rounded-lg font-bold whitespace-nowrap transition-all flex items-center gap-2 shadow-lg">
+                                🔍 חיפוש מידע
+                            </button>
+                        </div>
+                        <p class="text-xs text-blue-600 mt-2 font-semibold">
+                            💡 הזן מספר רישוי ולחץ "חיפוש מידע" למילוי אוטומטי של פרטי הרכב
+                        </p>
+                        <div id="apiStatus" class="mt-2"></div>
                     </div>
                     
                     <!-- שם הבעלים -->
@@ -207,14 +1065,6 @@
                                placeholder="2020">
                     </div>
                     
-                    <!-- קוד רכב (VIN) -->
-                    <div>
-                        <label class="block text-gray-700 font-bold mb-2">קוד רכב (VIN)</label>
-                        <input type="text" id="vinCode" maxlength="17"
-                               class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
-                               placeholder="17 תווים">
-                    </div>
-                    
                     <!-- קוד התנעה -->
                     <div>
                         <label class="block text-gray-700 font-bold mb-2">קוד התנעה (אימוביליזר)</label>
@@ -241,17 +1091,6 @@
                         <input type="text" id="enginePower"
                                class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
                                placeholder='150 כ"ס / 2000 סמ"ק'>
-                    </div>
-                    
-                    <!-- סטטוס רכב -->
-                    <div class="md:col-span-2">
-                        <label class="block text-gray-700 font-bold mb-2">סטטוס רכב</label>
-                        <select id="carStatus" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
-                            <option value="waiting">ממתין לטיפול</option>
-                            <option value="in_progress">בטיפול</option>
-                            <option value="ready">מוכן לאיסוף</option>
-                            <option value="completed">הושלם</option>
-                        </select>
                     </div>
                 </div>
                 
@@ -696,6 +1535,163 @@
             measurementId: "G-KLLCPECCDQ"
         };
 
+        // ==========================================
+        // CAR LOOKUP API - Israeli Government Data
+        // ==========================================
+        
+        // API Configuration (يمكنك إضافة API Key هنا لاحقاً)
+        // API Configuration - البيانات المفتوحة من الحكومة الإسرائيلية
+        const CAR_API_CONFIG = {
+            // ✅ هذا API مفتوح ومجاني - لا يحتاج تسجيل!
+            // البيانات من: משרד התחבורה - רשות הרישוי
+            baseUrl: 'https://data.gov.il/api/3/action/datastore_search',
+            resourceId: '053cea08-09bc-40ec-8f7a-156f0677aff3',
+            // ملاحظة: البيانات متاحة للجميع بدون قيود
+        };
+
+        // Format plate number as user types (XX-XXX-XX)
+        function formatPlateNumber(input) {
+            let value = input.value.replace(/[^0-9]/g, '');
+            if (value.length > 2 && value.length <= 5) {
+                value = value.slice(0, 2) + '-' + value.slice(2);
+            } else if (value.length > 5) {
+                value = value.slice(0, 2) + '-' + value.slice(2, 5) + '-' + value.slice(5, 7);
+            }
+            input.value = value;
+        }
+
+        // Lookup car information from Israeli Government API
+        async function lookupCarInfoFromAPI() {
+            const plateInput = document.getElementById('plateNumber');
+            const plateNumber = plateInput.value.replace(/[-\s]/g, '').trim();
+            const statusDiv = document.getElementById('apiStatus');
+            
+            if (!plateNumber) {
+                statusDiv.innerHTML = '<p class="text-sm text-red-600 font-semibold">❌ אנא הזן מספר רישוי</p>';
+                return;
+            }
+            
+            // Show loading
+            const button = event.target;
+            const originalHTML = button.innerHTML;
+            button.disabled = true;
+            button.innerHTML = '⏳ מחפש...';
+            
+            statusDiv.innerHTML = `
+                <div class="flex items-center gap-2 text-blue-600 text-sm font-semibold">
+                    <div class="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent"></div>
+                    מחפש במאגר רשות הרישוי...
+                </div>
+            `;
+            
+            try {
+                // Build API URL with filters
+                const url = `${CAR_API_CONFIG.baseUrl}?resource_id=${CAR_API_CONFIG.resourceId}&filters={"mispar_rechev":"${plateNumber}"}`;
+                
+                // Make API request (no authentication needed - open data)
+                const response = await fetch(url, {
+                    method: 'GET'
+                });
+                
+                if (!response.ok) {
+                    throw new Error('שגיאה בחיבור ל-API');
+                }
+                
+                const data = await response.json();
+                
+                if (data.success && data.result && data.result.records && data.result.records.length > 0) {
+                    const carInfo = data.result.records[0];
+                    
+                    // Fill form with API data
+                    if (carInfo.tozeret_nm) {
+                        document.getElementById('carType').value = carInfo.tozeret_nm;
+                    }
+                    if (carInfo.kinuy_mishari) {
+                        document.getElementById('model').value = carInfo.kinuy_mishari;
+                    }
+                    if (carInfo.shnat_yitzur) {
+                        document.getElementById('year').value = carInfo.shnat_yitzur;
+                    }
+                    if (carInfo.degem_nm) {
+                        document.getElementById('engineType').value = carInfo.degem_nm;
+                    }
+                    
+                    // Show success message
+                    statusDiv.innerHTML = `
+                        <div class="bg-green-50 border border-green-300 rounded-lg p-3 text-sm">
+                            <p class="text-green-800 font-bold mb-1">✓ נמצא מידע עבור הרכב!</p>
+                            <div class="text-green-700 text-xs space-y-1">
+                                <p>🚗 <strong>יצרן:</strong> ${carInfo.tozeret_nm || 'לא זמין'}</p>
+                                <p>📋 <strong>דגם:</strong> ${carInfo.kinuy_mishari || 'לא זמין'}</p>
+                                <p>📅 <strong>שנה:</strong> ${carInfo.shnat_yitzur || 'לא זמין'}</p>
+                                ${carInfo.tzeva_rechev ? `<p>🎨 <strong>צבע:</strong> ${carInfo.tzeva_rechev}</p>` : ''}
+                            </div>
+                        </div>
+                    `;
+                    
+                    showNotification('✓ פרטי הרכב מולאו בהצלחה!');
+                    
+                } else {
+                    // No results found
+                    statusDiv.innerHTML = `
+                        <div class="bg-orange-50 border border-orange-300 rounded-lg p-3 text-sm">
+                            <p class="text-orange-800 font-bold">❌ לא נמצא מידע עבור מספר רישוי זה</p>
+                            <p class="text-orange-700 text-xs mt-1">אנא מלא את הפרטים ידנית</p>
+                        </div>
+                    `;
+                }
+                
+            } catch (error) {
+                console.error('API Error:', error);
+                statusDiv.innerHTML = `
+                    <div class="bg-red-50 border border-red-300 rounded-lg p-3 text-sm">
+                        <p class="text-red-800 font-bold">❌ שגיאה בחיפוש</p>
+                        <p class="text-red-700 text-xs mt-1">${error.message || 'אנא נסה שוב מאוחר יותר'}</p>
+                    </div>
+                `;
+            } finally {
+                button.disabled = false;
+                button.innerHTML = originalHTML;
+            }
+        }
+
+        // ==========================================
+        // DARK MODE FUNCTIONALITY
+        // ==========================================
+        
+        // Initialize theme from localStorage
+        function initTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            updateThemeIcon(savedTheme);
+        }
+        
+        // Toggle theme
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeIcon(newTheme);
+            
+            // Show notification
+            const message = newTheme === 'dark' ? 'הופעל מצב לילה 🌙' : 'הופעל מצב יום ☀️';
+            showNotification(message);
+        }
+        
+        // Update theme icon
+        function updateThemeIcon(theme) {
+            const icon = document.getElementById('themeIcon');
+            if (icon) {
+                icon.textContent = theme === 'dark' ? '🌙' : '☀️';
+            }
+        }
+        
+        // Initialize theme on page load
+        initTheme();
+        
+        // ==========================================
         // Initialize Firebase
         let app, db, auth;
         let currentUser = null;
@@ -728,44 +1724,92 @@
         // Compress Image Function
         async function compressImage(file, maxSizeKB = 700) {
             return new Promise((resolve, reject) => {
+                // Simple validation
+                if (!file || !file.type || !file.type.startsWith('image/')) {
+                    reject(new Error('קובץ לא תקין'));
+                    return;
+                }
+                
                 const reader = new FileReader();
-                reader.readAsDataURL(file);
+                
+                reader.onerror = () => {
+                    reject(new Error('שגיאה בקריאת הקובץ'));
+                };
+                
                 reader.onload = (event) => {
                     const img = new Image();
-                    img.src = event.target.result;
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        let width = img.width;
-                        let height = img.height;
-                        
-                        const maxDimension = 1200;
-                        if (width > height && width > maxDimension) {
-                            height = (height * maxDimension) / width;
-                            width = maxDimension;
-                        } else if (height > maxDimension) {
-                            width = (width * maxDimension) / height;
-                            height = maxDimension;
-                        }
-                        
-                        canvas.width = width;
-                        canvas.height = height;
-                        
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, width, height);
-                        
-                        let quality = 0.8;
-                        let compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
-                        
-                        while (compressedDataUrl.length > maxSizeKB * 1024 * 1.37 && quality > 0.1) {
-                            quality -= 0.1;
-                            compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
-                        }
-                        
-                        resolve(compressedDataUrl);
+                    
+                    img.onerror = () => {
+                        reject(new Error('לא ניתן לטעון את התמונה'));
                     };
-                    img.onerror = reject;
+                    
+                    img.onload = () => {
+                        try {
+                            // Create canvas
+                            const canvas = document.createElement('canvas');
+                            let width = img.width || 800;
+                            let height = img.height || 600;
+                            
+                            // Resize if too large
+                            const maxDimension = 1200;
+                            if (width > maxDimension || height > maxDimension) {
+                                if (width > height) {
+                                    height = Math.round((height * maxDimension) / width);
+                                    width = maxDimension;
+                                } else {
+                                    width = Math.round((width * maxDimension) / height);
+                                    height = maxDimension;
+                                }
+                            }
+                            
+                            canvas.width = width;
+                            canvas.height = height;
+                            
+                            // Get context
+                            const ctx = canvas.getContext('2d');
+                            if (!ctx) {
+                                reject(new Error('שגיאה ביצירת Canvas'));
+                                return;
+                            }
+                            
+                            // White background for transparency
+                            ctx.fillStyle = '#FFFFFF';
+                            ctx.fillRect(0, 0, width, height);
+                            
+                            // Draw image
+                            ctx.drawImage(img, 0, 0, width, height);
+                            
+                            // Convert to JPEG with compression
+                            let quality = 0.8;
+                            let result = canvas.toDataURL('image/jpeg', quality);
+                            
+                            // Try to reduce size if needed (max 5 attempts)
+                            for (let i = 0; i < 5 && result.length > maxSizeKB * 1024 * 1.37; i++) {
+                                quality -= 0.1;
+                                if (quality < 0.3) break;
+                                result = canvas.toDataURL('image/jpeg', quality);
+                            }
+                            
+                            resolve(result);
+                        } catch (error) {
+                            reject(new Error('שגיאה בעיבוד התמונה'));
+                        }
+                    };
+                    
+                    // Set image source
+                    try {
+                        img.src = event.target.result;
+                    } catch (error) {
+                        reject(new Error('שגיאה בהגדרת התמונה'));
+                    }
                 };
-                reader.onerror = reject;
+                
+                // Read file
+                try {
+                    reader.readAsDataURL(file);
+                } catch (error) {
+                    reject(new Error('שגיאה בקריאת הקובץ'));
+                }
             });
         }
 
@@ -935,22 +1979,76 @@
             emptyState.classList.add('hidden');
             
             grid.innerHTML = cars.map(car => `
-                <div class="bg-white rounded-lg shadow p-4 car-card" data-search="${car.plateNumber} ${car.ownerName || ''}">
+                <div class="card" data-search="${car.plateNumber} ${car.ownerName || ''} ${car.phone || ''} ${car.carType || ''} ${car.model || ''} ${car.year || ''}">
                     ${car.imageUrl ? 
-                        `<img src="${car.imageUrl}" class="w-full h-40 object-cover rounded mb-3 cursor-pointer" onclick="viewCarDetails('${car.id}')">` : 
-                        `<div class="w-full h-40 bg-gray-200 rounded mb-3 flex items-center justify-center text-gray-400 cursor-pointer" onclick="viewCarDetails('${car.id}')">אין תמונה</div>`
+                        `<div class="relative overflow-hidden cursor-pointer group" onclick="viewCarDetails('${car.id}')">
+                            <img src="${car.imageUrl}" class="car-image">
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-black/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                <div class="absolute bottom-4 left-4 right-4">
+                                    <p class="text-white font-bold text-sm">לחץ לפרטים מלאים →</p>
+                                </div>
+                            </div>
+                        </div>` : 
+                        `<div class="car-image-placeholder cursor-pointer group" onclick="viewCarDetails('${car.id}')">
+                            <div class="text-center">
+                                <div class="text-5xl mb-2 opacity-20 group-hover:opacity-40 transition-opacity">🚗</div>
+                                <p class="text-sm text-gray-400 font-medium">אין תמונה</p>
+                            </div>
+                        </div>`
                     }
-                    <h3 class="font-bold text-lg cursor-pointer hover:text-blue-600" onclick="viewCarDetails('${car.id}')">${car.plateNumber}</h3>
-                    ${car.ownerName ? `<p class="text-gray-600">${car.ownerName}</p>` : ''}
-                    ${car.phone ? `<p class="text-sm">📞 ${car.phone}</p>` : ''}
-                    ${car.carType ? `<p class="text-sm">🚗 ${car.carType}</p>` : ''}
-                    ${car.model ? `<p class="text-sm">📋 ${car.model}</p>` : ''}
-                    ${car.year ? `<p class="text-sm">📅 ${car.year}</p>` : ''}
-                    
-                    <div class="mt-3 flex gap-2 flex-wrap">
-                        <button onclick="viewCarDetails('${car.id}')" class="text-green-600 hover:underline text-sm">📋 פרטים</button>
-                        <button onclick="editCar('${car.id}')" class="text-blue-600 hover:underline text-sm">עריכה</button>
-                        <button onclick="deleteCar('${car.id}')" class="text-red-600 hover:underline text-sm">מחיקה</button>
+                    <div class="p-6">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex-1">
+                                <h3 class="text-xl font-bold text-gray-900 cursor-pointer hover:text-amber-600 transition-colors mb-2" onclick="viewCarDetails('${car.id}')">${car.plateNumber}</h3>
+                                ${car.ownerName ? `<p class="text-gray-700 font-semibold text-base">${car.ownerName}</p>` : ''}
+                                ${car.carStatus ? `
+                                    <span class="inline-flex items-center gap-1 mt-3 text-xs px-3 py-1.5 rounded-lg font-semibold ${
+                                        car.carStatus === 'waiting' ? 'status-waiting' :
+                                        car.carStatus === 'in_progress' ? 'status-progress' :
+                                        car.carStatus === 'ready' ? 'status-ready' :
+                                        'status-completed'
+                                    }">
+                                        ${
+                                            car.carStatus === 'waiting' ? '⏳ ממתין לטיפול' :
+                                            car.carStatus === 'in_progress' ? '🔧 בטיפול' :
+                                            car.carStatus === 'ready' ? '✅ מוכן לאיסוף' :
+                                            '🏁 הושלם'
+                                        }
+                                    </span>
+                                ` : ''}
+                            </div>
+                            <span class="badge badge-primary">
+                                <span class="text-base">🚗</span>
+                            </span>
+                        </div>
+                        
+                        <div class="divider mb-4"></div>
+                        
+                        <div class="space-y-2.5 mb-5">
+                            ${car.phone ? `<div class="info-item"><span class="text-base">📞</span><span>${car.phone}</span></div>` : ''}
+                            ${car.carType ? `<div class="info-item"><span class="text-base">🏷️</span><strong>${car.carType}</strong></div>` : ''}
+                            ${car.model ? `<div class="info-item"><span class="text-base">📋</span><span>${car.model}</span></div>` : ''}
+                            ${car.year ? `<div class="info-item"><span class="text-base">📅</span><span>${car.year}</span></div>` : ''}
+                        </div>
+                        
+                        <div class="space-y-2.5">
+                            <div class="grid grid-cols-3 gap-2">
+                                <button onclick="viewCarDetails('${car.id}')" class="btn btn-success text-xs py-2.5">
+                                    פרטים
+                                </button>
+                                <button onclick="editCar('${car.id}')" class="btn btn-primary text-xs py-2.5">
+                                    ערוך
+                                </button>
+                                <button onclick="deleteCar('${car.id}')" class="btn btn-danger text-xs py-2.5">
+                                    מחק
+                                </button>
+                            </div>
+                            ${!car.carStatus ? `
+                                <button onclick="addCarToDashboard('${car.id}')" class="btn btn-secondary w-full text-xs py-2.5">
+                                    📊 הוסף ללוח בקרה
+                                </button>
+                            ` : ''}
+                        </div>
                     </div>
                 </div>
             `).join('');
@@ -991,12 +2089,35 @@
             
             document.getElementById('carDetailsContent').innerHTML = `
                 ${phoneButtons}
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                
+                <!-- Car Image with Change Button -->
+                <div class="mb-6">
                     ${car.imageUrl ? `
-                        <div class="col-span-2">
-                            <img src="${car.imageUrl}" class="w-full max-h-64 object-contain rounded">
+                        <div class="relative">
+                            <img src="${car.imageUrl}" class="w-full max-h-64 object-contain rounded border">
+                            <div class="absolute top-2 left-2 flex gap-2">
+                                <button onclick="changeCarImage('${carId}')" 
+                                        class="bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 shadow-lg flex items-center gap-2">
+                                    📷 שנה תמונה
+                                </button>
+                                <button onclick="deleteCarImage('${carId}')" 
+                                        class="bg-red-600 text-white px-3 py-2 rounded-lg hover:bg-red-700 shadow-lg flex items-center gap-2">
+                                    🗑️ מחק תמונה
+                                </button>
+                            </div>
                         </div>
-                    ` : ''}
+                    ` : `
+                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center bg-gray-50">
+                            <p class="text-gray-500 mb-4">אין תמונה</p>
+                            <button onclick="changeCarImage('${carId}')" 
+                                    class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                                📷 הוסף תמונה
+                            </button>
+                        </div>
+                    `}
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                     ${car.ownerName ? `<div><span class="font-bold">שם הבעלים:</span> ${car.ownerName}</div>` : ''}
                     ${car.phone ? `<div><span class="font-bold">טלפון:</span> ${car.phone}</div>` : ''}
                     ${car.carType ? `<div><span class="font-bold">סוג רכב:</span> ${car.carType}</div>` : ''}
@@ -1117,15 +2238,98 @@
             document.getElementById('carType').value = car.carType || '';
             document.getElementById('model').value = car.model || '';
             document.getElementById('year').value = car.year || '';
-            document.getElementById('vinCode').value = car.vinCode || '';
             document.getElementById('immobilizerCode').value = car.immobilizerCode || '';
             document.getElementById('engineType').value = car.engineType || '';
             document.getElementById('enginePower').value = car.enginePower || '';
-            document.getElementById('carStatus').value = car.carStatus || 'waiting';
+            
+            // إعادة تعيين حقل الصورة بالكامل
+            const imageInput = document.getElementById('carImage');
+            imageInput.value = '';
+            // إعادة إنشاء العنصر لإزالة أي قيود
+            const newImageInput = imageInput.cloneNode(true);
+            imageInput.parentNode.replaceChild(newImageInput, imageInput);
+            
+            // إعادة إضافة event listener
+            newImageInput.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                const previewDiv = document.getElementById('imagePreview');
+                
+                if (!file) {
+                    previewDiv.innerHTML = '';
+                    return;
+                }
+                
+                // Check file size (max 10MB)
+                if (file.size > 10 * 1024 * 1024) {
+                    alert('הקובץ גדול מדי (מקסימום 10MB)');
+                    e.target.value = '';
+                    previewDiv.innerHTML = '';
+                    return;
+                }
+                
+                // Show loading
+                previewDiv.innerHTML = `
+                    <div class="text-center py-4">
+                        <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-gray-300 border-t-amber-500"></div>
+                        <p class="text-sm text-gray-600 mt-2">מעבד תמונה...</p>
+                    </div>
+                `;
+                
+                // Small delay to show loading
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                try {
+                    const originalSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+                    
+                    // Compress image
+                    const compressed = await compressImage(file, 700);
+                    const compressedSizeKB = (compressed.length / 1024 / 1.37).toFixed(0);
+                    
+                    // Show preview with change button
+                    previewDiv.innerHTML = `
+                        <div class="inline-block">
+                            <img src="${compressed}" class="w-48 h-48 object-cover rounded-lg border-2 border-green-400 shadow-lg" alt="תצוגה מקדימה חדשה">
+                            <div class="mt-3 text-center">
+                                <p class="text-sm text-green-600 font-bold mb-2">✓ התמונה החדשה נדחסה בהצלחה</p>
+                                <p class="text-xs text-gray-500 mb-3">${originalSizeMB}MB → ${compressedSizeKB}KB</p>
+                                <button type="button" onclick="document.getElementById('carImage').value=''; document.getElementById('carImage').click();" 
+                                        class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg font-semibold transition-all">
+                                    🔄 שנה תמונה
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                } catch (error) {
+                    // Show error
+                    const errorMsg = error.message || 'שגיאה לא ידועה';
+                    previewDiv.innerHTML = `
+                        <div class="bg-red-50 border border-red-300 rounded-lg p-4 text-center">
+                            <p class="text-red-700 text-sm font-semibold mb-2">❌ ${errorMsg}</p>
+                            <p class="text-red-600 text-xs mb-2">נסה להשתמש בתמונה אחרת</p>
+                            <button type="button" onclick="document.getElementById('carImage').value=''; document.getElementById('imagePreview').innerHTML=''; document.getElementById('carImage').click();" 
+                                    class="text-xs bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700">
+                                נסה שוב
+                            </button>
+                        </div>
+                    `;
+                    e.target.value = '';
+                }
+            });
             
             if (car.imageUrl) {
                 document.getElementById('imagePreview').innerHTML = 
-                    `<img src="${car.imageUrl}" class="w-32 h-32 object-cover rounded">`;
+                    `<div class="inline-block">
+                        <img src="${car.imageUrl}" class="w-48 h-48 object-cover rounded-lg border-2 border-amber-400 shadow-lg" alt="תמונה נוכחית">
+                        <div class="mt-3 text-center">
+                            <p class="text-xs text-blue-600 font-semibold mb-2">📷 תמונה נוכחית</p>
+                            <button type="button" onclick="document.getElementById('carImage').click()" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg font-semibold transition-all">
+                                🔄 שנה תמונה
+                            </button>
+                            <p class="text-xs text-gray-600 mt-2">או לחץ על איזור ההעלאה למעלה</p>
+                        </div>
+                    </div>`;
+            } else {
+                document.getElementById('imagePreview').innerHTML = '';
             }
             
             document.getElementById('carModal').classList.remove('hidden');
@@ -1148,14 +2352,20 @@
                     carType: document.getElementById('carType').value.trim(),
                     model: document.getElementById('model').value.trim(),
                     year: document.getElementById('year').value.trim(),
-                    vinCode: document.getElementById('vinCode').value.trim(),
                     immobilizerCode: document.getElementById('immobilizerCode').value.trim(),
                     engineType: document.getElementById('engineType').value.trim(),
                     enginePower: document.getElementById('enginePower').value.trim(),
-                    carStatus: document.getElementById('carStatus').value || 'waiting',
                     userId: currentUser.uid,
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                 };
+                
+                // Only add carStatus if editing existing car that has status
+                if (editingCarId) {
+                    const existingCar = cars.find(c => c.id === editingCarId);
+                    if (existingCar && existingCar.carStatus) {
+                        carData.carStatus = existingCar.carStatus;
+                    }
+                }
                 
                 const imageFile = document.getElementById('carImage').files[0];
                 if (imageFile) {
@@ -1224,6 +2434,103 @@
             } catch (error) {
                 console.error('Error deleting car:', error);
                 alert('שגיאה במחיקת הרכב');
+            }
+        }
+
+        // Change Car Image
+        function changeCarImage(carId) {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.capture = 'environment'; // Enable camera on mobile
+            input.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                // Check if it's an image
+                if (!file.type.startsWith('image/')) {
+                    alert('אנא בחר קובץ תמונה בלבד');
+                    return;
+                }
+                
+                // Check file size (max 30MB)
+                if (file.size > 30 * 1024 * 1024) {
+                    alert('הקובץ גדול מדי. גודל מקסימלי: 30MB');
+                    return;
+                }
+                
+                try {
+                    // Show loading
+                    const loadingMsg = document.createElement('div');
+                    loadingMsg.id = 'imageLoadingMsg';
+                    loadingMsg.className = 'fixed top-4 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+                    loadingMsg.textContent = '📷 מעלה תמונה...';
+                    document.body.appendChild(loadingMsg);
+                    
+                    // Convert to base64
+                    const reader = new FileReader();
+                    reader.onload = async (event) => {
+                        try {
+                            const imageUrl = event.target.result;
+                            
+                            // Update car in database
+                            await db.collection('cars').doc(carId).update({
+                                imageUrl: imageUrl,
+                                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                            });
+                            
+                            // Remove loading message
+                            const msg = document.getElementById('imageLoadingMsg');
+                            if (msg) document.body.removeChild(msg);
+                            
+                            // Show success
+                            alert('✅ התמונה עודכנה בהצלחה!');
+                            
+                            // Reload car details
+                            await loadCars();
+                            viewCarDetails(carId);
+                            
+                        } catch (error) {
+                            const msg = document.getElementById('imageLoadingMsg');
+                            if (msg) document.body.removeChild(msg);
+                            console.error('Error updating image:', error);
+                            alert('שגיאה בעדכון התמונה');
+                        }
+                    };
+                    
+                    reader.onerror = () => {
+                        const msg = document.getElementById('imageLoadingMsg');
+                        if (msg) document.body.removeChild(msg);
+                        alert('שגיאה בקריאת הקובץ');
+                    };
+                    
+                    reader.readAsDataURL(file);
+                    
+                } catch (error) {
+                    console.error('Error processing image:', error);
+                    alert('שגיאה בעיבוד התמונה');
+                }
+            };
+            input.click();
+        }
+
+        // Delete Car Image
+        async function deleteCarImage(carId) {
+            if (!confirm('האם למחוק את התמונה?')) return;
+            
+            try {
+                await db.collection('cars').doc(carId).update({
+                    imageUrl: firebase.firestore.FieldValue.delete(),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                alert('✅ התמונה נמחקה בהצלחה!');
+                await loadCars();
+                viewCarDetails(carId);
+                
+            } catch (error) {
+                console.error('Error deleting image:', error);
+                alert('שגיאה במחיקת התמונה');
             }
         }
 
@@ -1551,13 +2858,40 @@
 
         // Search Cars
         function searchCars() {
-            const searchTerm = document.getElementById('searchBox').value.toLowerCase();
-            const cards = document.querySelectorAll('.car-card');
+            const searchTerm = document.getElementById('searchBox').value.toLowerCase().trim();
+            const allCards = document.querySelectorAll('#carsGrid > .card');
             
-            cards.forEach(card => {
-                const text = card.dataset.search.toLowerCase();
-                card.style.display = text.includes(searchTerm) ? 'block' : 'none';
+            if (searchTerm === '') {
+                // إذا كان حقل البحث فارغاً، أظهر جميع البطاقات
+                allCards.forEach(card => {
+                    card.style.display = 'block';
+                });
+                return;
+            }
+            
+            let foundCount = 0;
+            
+            allCards.forEach(card => {
+                const searchData = card.getAttribute('data-search');
+                if (searchData) {
+                    const text = searchData.toLowerCase();
+                    if (text.includes(searchTerm)) {
+                        card.style.display = 'block';
+                        foundCount++;
+                    } else {
+                        card.style.display = 'none';
+                    }
+                }
             });
+            
+            // عرض رسالة إذا لم يتم العثور على نتائج
+            const emptyState = document.getElementById('emptyState');
+            if (foundCount === 0) {
+                emptyState.innerHTML = '<p class="text-gray-500 text-xl">❌ לא נמצאו תוצאות עבור: "' + document.getElementById('searchBox').value + '"</p>';
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+            }
         }
 
         // Export CSV
@@ -1607,34 +2941,82 @@
             }, 5000);
         }
 
-        // Image Preview
+        // Image Preview - Simplified for mobile
         document.getElementById('carImage').addEventListener('change', async (e) => {
+            console.log('File input changed!');
             const file = e.target.files[0];
+            console.log('Selected file:', file);
             const previewDiv = document.getElementById('imagePreview');
             
-            if (file) {
-                if (!file.type.match(/image\/(jpeg|jpg|png|gif)/)) {
-                    alert('פורמט לא נתמך. השתמש ב-JPG או PNG');
-                    e.target.value = '';
-                    previewDiv.innerHTML = '';
-                    return;
-                }
-                
-                const reader = new FileReader();
-                reader.onload = async (e) => {
-                    const originalSizeMB = (file.size / (1024 * 1024)).toFixed(2);
-                    const compressed = await compressImage(file, 700);
-                    const compressedSizeKB = (compressed.length / 1024 / 1.37).toFixed(0);
-                    
-                    previewDiv.innerHTML = `
-                        <img src="${compressed}" class="w-32 h-32 object-cover rounded mt-2 border">
-                        <p class="text-xs text-green-600 mt-1">✓ דחוס אוטומטית</p>
-                        <p class="text-xs text-gray-500">${originalSizeMB}MB → ${compressedSizeKB}KB</p>
-                    `;
-                };
-                reader.readAsDataURL(file);
-            } else {
+            if (!file) {
+                console.log('No file selected');
                 previewDiv.innerHTML = '';
+                return;
+            }
+            
+            console.log('File details:', {
+                name: file.name,
+                size: file.size,
+                type: file.type
+            });
+            
+            // Check file size (max 10MB)
+            if (file.size > 10 * 1024 * 1024) {
+                alert('הקובץ גדול מדי (מקסימום 10MB)');
+                e.target.value = '';
+                previewDiv.innerHTML = '';
+                return;
+            }
+            
+            // Show loading
+            previewDiv.innerHTML = `
+                <div class="text-center py-4">
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-gray-300 border-t-amber-500"></div>
+                    <p class="text-sm text-gray-600 mt-2">מעבד תמונה...</p>
+                </div>
+            `;
+            
+            // Small delay to show loading
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            try {
+                console.log('Starting compression...');
+                const originalSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+                
+                // Compress image
+                const compressed = await compressImage(file, 700);
+                console.log('Compression successful!');
+                const compressedSizeKB = (compressed.length / 1024 / 1.37).toFixed(0);
+                
+                // Show preview with change button
+                previewDiv.innerHTML = `
+                    <div class="inline-block">
+                        <img src="${compressed}" class="w-48 h-48 object-cover rounded-lg border-2 border-green-400 shadow-lg" alt="תצוגה מקדימה">
+                        <div class="mt-3 text-center">
+                            <p class="text-sm text-green-600 font-bold mb-2">✓ התמונה נדחסה בהצלחה</p>
+                            <p class="text-xs text-gray-500 mb-3">${originalSizeMB}MB → ${compressedSizeKB}KB</p>
+                            <button type="button" onclick="document.getElementById('carImage').value=''; document.getElementById('carImage').click();" 
+                                    class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg font-semibold transition-all">
+                                🔄 שנה תמונה
+                            </button>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Compression error:', error);
+                // Show error
+                const errorMsg = error.message || 'שגיאה לא ידועה';
+                previewDiv.innerHTML = `
+                    <div class="bg-red-50 border border-red-300 rounded-lg p-4 text-center">
+                        <p class="text-red-700 text-sm font-semibold mb-2">❌ ${errorMsg}</p>
+                        <p class="text-red-600 text-xs mb-2">נסה להשתמש בתמונה אחרת</p>
+                        <button type="button" onclick="document.getElementById('carImage').value=''; document.getElementById('imagePreview').innerHTML=''; document.getElementById('carImage').click();" 
+                                class="text-xs bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700">
+                            נסה שוב
+                        </button>
+                    </div>
+                `;
+                e.target.value = '';
             }
         });
 
@@ -2095,8 +3477,8 @@
 
         // Render Dashboard
         function renderDashboard() {
-            // Count cars by status
-            const waiting = cars.filter(c => c.carStatus === 'waiting' || !c.carStatus);
+            // Count cars by status - ONLY cars with explicit status
+            const waiting = cars.filter(c => c.carStatus === 'waiting');
             const inProgress = cars.filter(c => c.carStatus === 'in_progress');
             const ready = cars.filter(c => c.carStatus === 'ready');
             const completed = cars.filter(c => c.carStatus === 'completed');
@@ -2136,7 +3518,7 @@
                         ${status !== 'in_progress' ? `<button onclick="changeCarStatus('${car.id}', 'in_progress')" class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200" title="העבר לטיפול">🔧</button>` : ''}
                         ${status !== 'ready' ? `<button onclick="changeCarStatus('${car.id}', 'ready')" class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200" title="סמן כמוכן">✅</button>` : ''}
                         ${status !== 'completed' ? `<button onclick="changeCarStatus('${car.id}', 'completed')" class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded hover:bg-gray-200" title="סמן כהושלם">🏁</button>` : ''}
-                        ${status === 'completed' ? `<button onclick="deleteCarFromDashboard('${car.id}')" class="text-xs bg-red-100 text-red-700 px-2 py-1 rounded hover:bg-red-200" title="מחק מהמערכת">🗑️</button>` : ''}
+                        <button onclick="removeCarFromDashboard('${car.id}')" class="text-xs bg-red-100 text-red-700 px-2 py-1 rounded hover:bg-red-200" title="הסר מלוח הבקרה">❌</button>
                     </div>
                 </div>
             `).join('');
@@ -2167,7 +3549,9 @@
                     cars[carIndex].carStatus = newStatus;
                 }
                 
+                // Update both dashboard and main grid
                 renderDashboard();
+                displayCars();
                 
                 // Show notification
                 const statusNames = {
@@ -2189,47 +3573,76 @@
         // Show Notification
         function showNotification(message) {
             const notification = document.createElement('div');
-            notification.className = 'fixed top-4 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-[100]';
-            notification.textContent = message;
+            notification.className = 'notification fixed top-4 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-4 rounded-xl shadow-xl z-[100] font-semibold flex items-center gap-3';
+            notification.innerHTML = `
+                <span class="text-xl">✓</span>
+                <span>${message}</span>
+            `;
             document.body.appendChild(notification);
             
             setTimeout(() => {
-                notification.remove();
+                notification.style.opacity = '0';
+                notification.style.transform = 'translate(-50%, -100%)';
+                setTimeout(() => notification.remove(), 300);
             }, 2000);
         }
 
         // Delete Car from Dashboard
-        async function deleteCarFromDashboard(carId) {
+        // Remove Car From Dashboard (only remove status, not delete car)
+        async function removeCarFromDashboard(carId) {
             const car = cars.find(c => c.id === carId);
             if (!car) return;
             
-            if (!confirm(`האם אתה בטוח שברצונך למחוק את ${car.plateNumber} מהמערכת?`)) return;
+            if (!confirm(`האם להסיר את ${car.plateNumber} מלוח הבקרה?`)) return;
             
             try {
-                // Delete car
-                await db.collection('cars').doc(carId).delete();
-                
-                // Delete all maintenance records for this car
-                const maintenanceSnapshot = await db.collection('maintenance')
-                    .where('carId', '==', carId)
-                    .get();
-                
-                const deletePromises = [];
-                maintenanceSnapshot.forEach(doc => {
-                    deletePromises.push(db.collection('maintenance').doc(doc.id).delete());
+                // Remove status from car in Firebase
+                await db.collection('cars').doc(carId).update({
+                    carStatus: firebase.firestore.FieldValue.delete(),
+                    statusUpdatedAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
                 
-                await Promise.all(deletePromises);
+                // Update local cars array - set to undefined
+                const carIndex = cars.findIndex(c => c.id === carId);
+                if (carIndex !== -1) {
+                    cars[carIndex].carStatus = undefined;
+                }
                 
-                // Update local array
-                cars = cars.filter(c => c.id !== carId);
-                
+                // Update both dashboard and main grid
                 renderDashboard();
-                showNotification('הרכב נמחק בהצלחה');
+                displayCars();
+                
+                showNotification('הרכב הוסר מלוח הבקרה');
                 
             } catch (error) {
-                console.error('Error deleting car:', error);
-                alert('שגיאה במחיקת הרכב');
+                console.error('Error removing car from dashboard:', error);
+                alert('שגיאה בהסרת הרכב מלוח הבקרה');
+            }
+        }
+
+        // Add Car To Dashboard
+        async function addCarToDashboard(carId) {
+            try {
+                // Add car to dashboard with 'waiting' status
+                await db.collection('cars').doc(carId).update({
+                    carStatus: 'waiting',
+                    statusUpdatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                // Update local cars array
+                const carIndex = cars.findIndex(c => c.id === carId);
+                if (carIndex !== -1) {
+                    cars[carIndex].carStatus = 'waiting';
+                }
+                
+                // Reload the main grid to show updated status
+                displayCars();
+                
+                showNotification('הרכב נוסף ללוח הבקרה');
+                
+            } catch (error) {
+                console.error('Error adding car to dashboard:', error);
+                alert('שגיאה בהוספת הרכב ללוח הבקרה');
             }
         }
 
